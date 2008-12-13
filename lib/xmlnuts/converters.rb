@@ -3,7 +3,7 @@ module XmlNuts
     def self.lookup(type)
       lookup!(type)
     rescue ArgumentError
-      # swallow
+      nil
     end
 
     def self.lookup!(type)
@@ -12,37 +12,54 @@ module XmlNuts
       raise ArgumentError, "converter not found for #{type}"
     end
 
-    module Convert_string #:nodoc:
-      def self.to_xml(string, options)
+    def self.create(type, options)
+      create!(type, options)
+    rescue ArgumentError
+      nil
+    end
+
+    def self.create!(type, options)
+      lookup!(type).new(options)
+    end
+
+    class Convert_string #:nodoc:
+      def initialize(options)
+        @whitespace = options[:whitespace] || :trim
+      end
+
+      def to_xml(string)
         string
       end
 
-      def self.from_xml(string, options = {})
+      def from_xml(string)
         return nil unless string
-        string = case options[:whitespace]
-        when nil, :trim, nil then string.strip
+        string = case @whitespace
+        when :trim then string.strip
         when :preserve then string
         when :collapse then string.gsub(/\s+/, ' ').strip
         end
       end
     end
 
-    module Convert_boolean #:nodoc:
-      def self.to_xml(flag, options)
+    class Convert_boolean < Convert_string #:nodoc:
+      def initialize(options)
+        super
+        @format = options[:format] || :truefalse
+        raise ArgumentError, "unrecognized format #{@format}" unless [:truefalse, :yesno, :numeric].include?(@format)
+      end
+
+      def to_xml(flag)
         return nil if flag.nil?
-        flag = !!flag
-        case options[:format]
-        when nil, :truefalse then flag ? 'true' : 'false'
+        case @format
+        when :truefalse then flag ? 'true' : 'false'
         when :yesno then flag ? 'yes' : 'no'
         when :numeric then flag ? '0' : '1'
-        else
-          raise ArgumentError, "unrecognized format #{options[:format]}"
         end
       end
 
-      def self.from_xml(string, options)
+      def from_xml(string)
         return nil unless string
-        case string = Convert_string.from_xml(string, options)
+        case string = super(string)
         when '1', 'true', 'yes' then true
         when '0', 'false', 'no' then false
         else
@@ -51,23 +68,47 @@ module XmlNuts
       end
     end
 
-    module Convert_integer #:nodoc:
-      def self.to_xml(int, options)
+    class Convert_integer < Convert_string #:nodoc:
+      def initialize(options)
+        super
+      end
+
+      def to_xml(int)
         int.to_s
       end
 
-      def self.from_xml(string, options)
-        string ? Integer(Convert_string.from_xml(string, options)) : nil
+      def from_xml(string)
+        string && Integer(super(string))
       end
     end
 
-    module Convert_datetime #:nodoc:
-      def self.to_xml(time, options)
-        time ? time.xmlschema(options[:fraction_digits] || 0) : nil
+    class Convert_datetime < Convert_string #:nodoc:
+      def initialize(options)
+        super
+        @fraction_digits = options[:fraction_digits] || 0
       end
 
-      def self.from_xml(string, options)
-        string ? Time.parse(Convert_string.from_xml(string, options)) : nil
+      def to_xml(time)
+        time && time.xmlschema(@fraction_digits)
+      end
+
+      def self.from_xml(string)
+        string && Time.parse(super(string, options))
+      end
+    end
+
+    class Convert_list #:nodoc:
+      def initialize(options)
+        @item_type = options[:item_type] || :string
+        @item_converter = Converters.create!(@item_type, options)
+      end
+
+      def to_xml(array)
+        array.map {|x| @item_converter.to_xml(x) } * ' '
+      end
+
+      def from_xml(string)
+        string && string.split.map! {|x| @item_converter.from_xml(x)}
       end
     end
   end

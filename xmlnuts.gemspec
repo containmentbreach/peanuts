@@ -1,6 +1,6 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.0.1'
+  s.version = '0.0.2'
   s.date = '2008-12-13'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
@@ -26,7 +26,7 @@ gemspec = Gem::Specification.new do |s|
   )
 
   s.has_rdoc = true
-  s.rdoc_options = %w(--line-numbers --inline-source --main README.rdoc)
+  s.rdoc_options = %w(--line-numbers --inline-source --main README)
   s.extra_rdoc_files = %w(README MIT-LICENSE)
 
   s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])

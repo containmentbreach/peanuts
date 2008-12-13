@@ -1,72 +1,137 @@
 module XmlNuts
   class Mapping
-    attr_reader :name, :xmlname, :type, :options
+    attr_reader :name, :xmlname, :type, :options, :converter
 
     def initialize(name, type, options)
       @name, @xmlname, @type, @options = name.to_sym, (options.delete(:xmlname) || name).to_s, type, options
+      @setter = :"#{name}="
+      @converter = Converters.create(type, options)
     end
 
     def to_xml(nut, node)
-      setxml(node, get(nut))
+      setxml(node, toxml(get(nut)))
     end
 
     def from_xml(nut, node)
-      set(nut, getxml(node))
+      set(nut, froxml(getxml(node)))
     end
 
-    def get(nut)
+    private
+    def get(nut) #:doc:
       nut.send(name)
     end
 
-    def set(nut, value)
-      nut.send("#{name}=", value)
+    def set(nut, value) #:doc:
+      nut.send(@setter, value)
+    end
+
+    def toxml(value) #:doc:
+      value
+    end
+
+    def froxml(text) #:doc:
+      text
     end
   end
 
   class PrimitiveMapping < Mapping
-    attr_reader :converter
-
     def initialize(name, type, options)
+      if type.is_a?(Array)
+        raise ArgumentError, "invalid value for type: #{type}" if type.length != 1
+        type, options[:item_type] = :list, type.first
+      end
       super
-      @converter = Converters.lookup!(type)
+      raise ArgumentError, "converter absent for type #{type.inspect}" unless converter
     end
 
-    def get(nut)
-      converter.to_xml(super(nut), options)
+    private
+    def toxml(value) #:doc:
+      converter.to_xml(value)
     end
 
-    def set(nut, text)
-      super(nut, converter.from_xml(text, options))
+    def froxml(text) #:doc:
+      converter.from_xml(text)
     end
   end
 
   class ElementMapping < PrimitiveMapping
-    def getxml(node)
-      (e = node.elements[xmlname]) ? e.text : nil
+    private
+    def getxml(node) #:doc:
+      (e = node.elements[xmlname]) && e.text
     end
 
-    def setxml(node, value)
+    def setxml(node, value) #:doc:
       (node.elements[xmlname] ||= REXML::Element.new(xmlname)).text = value
     end
   end
 
   class AttributeMapping < PrimitiveMapping
-    def getxml(node)
+    private
+    def getxml(node) #:doc:
       node.attributes[xmlname]
     end
 
-    def setxml(node, value)
+    def setxml(node, value) #:doc:
       node.add_attribute(xmlname, value)
     end
   end
 
-  class HasOneMapping < Mapping
-    def getxml(node)
-      (e = node.elements[xmlname]) ? type.parse(e) : nil
+  module NestedMany
+    private
+    def toxml(nested_nuts) #:doc:
+      nested_nuts && nested_nuts.map {|x| super(x) }
     end
 
-    def setxml(node, value)
-      type.build(value, node.add_element(xmlname)) if value
+    def froxml(nested_nodes) #:doc:
+      nested_nodes && nested_nodes.map {|x| super(x) }
+    end
+  end
+
+  class ElementsMapping < PrimitiveMapping
+    include NestedMany
+
+    private
+    def getxml(node) #:doc:
+      (e = node.get_elements(xmlname)) && e.map {|x| x.text }
+    end
+
+    def setxml(node, values) #:doc:
+      values.each {|x| node.add_element(xmlname).text = x } if values
+    end
+  end
+
+  class NestedMapping < Mapping
+    private
+    def toxml(nested_nut) #:doc:
+      type.build_node(nested_nut, Element.new(xmlname))
+    end
+
+    def froxml(nested_node) #:doc:
+      type.parse_node(type.new, nested_node)
+    end
+  end
+
+  class NestedOneMapping < NestedMapping
+    private
+    def getxml(node) #:doc:
+      node.elements[xmlname]
+    end
+
+    def setxml(node, nested_node) #:doc:
+      node.elements << nested_node if nested_node
+    end
+  end
+
+  class NestedManyMapping < NestedMapping
+    include NestedMany
+
+    private
+    def getxml(node) #:doc:
+      node.get_elements(xmlname)
+    end
+
+    def setxml(node, nested_nodes) #:doc:
+      nested_nodes.each {|x| node.add_element(x) }
     end
   end
 end

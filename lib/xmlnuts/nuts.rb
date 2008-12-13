@@ -3,7 +3,7 @@ require 'time'
 require 'xmlnuts/converters'
 require 'xmlnuts/mappings'
 
-module XmlNuts
+module XmlNuts #:nodoc:
   module Nut
     def self.included(other) #:nodoc:
       other.extend(ClassMethods)
@@ -11,17 +11,17 @@ module XmlNuts
 
     module ClassMethods
       def element(name, type = :string, options = {})
-        mappings << ElementMapping.new(name, type, options)
+        mappings << (type.is_a?(Class) ? NestedOneMapping : ElementMapping).new(name, type, options)
+        attr_accessor name
+      end
+
+      def elements(name, type = :string, options = {})
+        mappings << (type.is_a?(Class) ? NestedManyMapping : ElementsMapping).new(name, type, options)
         attr_accessor name
       end
 
       def attribute(name, type = :string, options = {})
         mappings << AttributeMapping.new(name, type, options)
-        attr_accessor name
-      end
-
-      def has_one(name, type, options = {})
-        mappings << HasOneMapping.new(name, type, options)
         attr_accessor name
       end
 
@@ -53,18 +53,18 @@ module XmlNuts
         end
       end
 
-      private
       def build_node(nut, node)
         callem(:to_xml, nut, node)
         node
       end
 
-      def parse_node(nut, node) #:nodoc:
+      def parse_node(nut, node)
         callem(:from_xml ,nut, node)
         nut
       end
 
-      def callem(method, nut, node) #:nodoc:
+      private
+      def callem(method, nut, node)
         mappings.each {|m| m.send(method, nut, node) }
       end
     end
