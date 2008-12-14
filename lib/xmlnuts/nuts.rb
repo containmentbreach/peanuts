@@ -1,5 +1,7 @@
+require 'enumerator'
 require 'rexml/document'
 require 'time'
+require 'xmlnuts/backend'
 require 'xmlnuts/converters'
 require 'xmlnuts/mappings'
 
@@ -10,13 +12,18 @@ module XmlNuts #:nodoc:
     end
 
     module ClassMethods
+      def namespaces(options = nil)
+        @namespaces ||= {}
+        options ? @namespaces.update(options) : @namespaces
+      end
+
       def element(name, type = :string, options = {})
-        mappings << (type.is_a?(Class) ? NestedOneMapping : ElementMapping).new(name, type, options)
+        mappings << (type.is_a?(Class) ? ElementMapping : ElementValueMapping).new(name, type, options)
         attr_accessor name
       end
 
       def elements(name, type = :string, options = {})
-        mappings << (type.is_a?(Class) ? NestedManyMapping : ElementsMapping).new(name, type, options)
+        mappings << (type.is_a?(Class) ? ElementsMapping : ElementValuesMapping).new(name, type, options)
         attr_accessor name
       end
 
@@ -30,42 +37,45 @@ module XmlNuts #:nodoc:
       end
 
       def build(nut, destination = nil)
+        backend = REXMLBackend.new
         case destination
         when nil
           destination = REXML::Document.new
           e = destination.add_element('root')
-          build_node(nut, e)
+          build_node(backend, nut, e)
         when REXML::Node
-          build_node(nut, destination)
+          build_node(backend, nut, destination)
         end
         destination
       end
 
-      def parse(source)
+      def parse(source, options = {})
+        backend = (options[:backend] || XmlBackend.default).new
         case source
         when nil
           nil
         when REXML::Node
-          parse_node(new, source)
+          parse_node(backend, new, source)
         when String
           doc = REXML::Document.new(source)
-          (root = doc.root) ? parse_node(new, root) : nil
+          (root = doc.root) ? parse_node(backend, new, root) : nil
         end
       end
 
-      def build_node(nut, node)
-        callem(:to_xml, nut, node)
+      def build_node(backend, nut, node)
+        backend.add_namespaces(node, namespaces)
+        callem(:to_xml, backend, nut, node)
         node
       end
 
-      def parse_node(nut, node)
-        callem(:from_xml ,nut, node)
+      def parse_node(backend, nut, node)
+        callem(:from_xml, backend, nut, node)
         nut
       end
 
       private
-      def callem(method, nut, node)
-        mappings.each {|m| m.send(method, nut, node) }
+      def callem(method, *args)
+        mappings.each {|m| m.send(method, *args) }
       end
     end
   end

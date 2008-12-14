@@ -13,11 +13,13 @@ end
 class Pet
   include XmlNuts::Nut
 
-  element :eats, [:string], :xmlname => :ration
-  element :species, :string, :whitespace => :collapse
+  namespaces :aa => 'a', :p => 'b'
+
+  element :eats, [:string], :xmlname => :ration, :xmlns => 'a'
+  element :species, :string, :whitespace => :collapse, :xmlns => 'c'
   elements :paws, :string, :xmlname => :paw
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail'
+  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'b'
   attribute :height, :integer
 
   element :cheezburger, Cheezburger
@@ -27,13 +29,15 @@ class ParsingTest < Test::Unit::TestCase
   context "Old McDonald's pet" do
     setup do
       @xml_fragment = <<-EOS
-        <mypet height=' 12 ' has-tail=' yes  '>
-          <species>   silly
+        <mypet xmlns:aa='a' xmlns:bb='b' height=' 12 ' bb:has-tail=' yes  '>
+          <species xmlns='c'>
+silly
               mouse
           </species>
-          <ration>  tigers
-                    lions
-          </ration>
+          <aa:ration>
+            tigers
+            lions
+          </aa:ration>
           <paw>  one</paw>
           <paw> two </paw>
           <paw>three</paw>

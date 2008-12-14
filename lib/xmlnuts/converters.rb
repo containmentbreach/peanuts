@@ -22,6 +22,20 @@ module XmlNuts
       lookup!(type).new(options)
     end
 
+    class Convert_nested #:nodoc:
+      def initialize(options)
+        @type = options[:object_type]
+      end
+
+      def to_xml(nut)
+        nut
+      end
+
+      def from_xml(node)
+        node
+      end
+    end
+
     class Convert_string #:nodoc:
       def initialize(options)
         @whitespace = options[:whitespace] || :trim
@@ -104,7 +118,7 @@ module XmlNuts
       end
 
       def to_xml(array)
-        array.map {|x| @item_converter.to_xml(x) } * ' '
+        array && array.map {|x| @item_converter.to_xml(x) } * ' '
       end
 
       def from_xml(string)
