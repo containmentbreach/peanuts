@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
   s.version = '0.0.2'
-  s.date = '2008-12-13'
+  s.date = '2008-12-14'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making xml<->ruby binding easy'
@@ -14,7 +14,7 @@ gemspec = Gem::Specification.new do |s|
   s.require_paths = %w(lib)
 
   s.files = %w(
-    README MIT-LICENSE Rakefile
+    README MIT-LICENSE
     lib/xmlnuts.rb
     lib/xmlnuts/nuts.rb
     lib/xmlnuts/mappings.rb
@@ -22,12 +22,12 @@ gemspec = Gem::Specification.new do |s|
   )
 
   s.test_files = %w(
-    test/test_general.rb
+    test/parsing_test.rb
   )
 
   s.has_rdoc = true
   s.rdoc_options = %w(--line-numbers --inline-source --main README)
   s.extra_rdoc_files = %w(README MIT-LICENSE)
 
-  s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
+  # s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
 end
