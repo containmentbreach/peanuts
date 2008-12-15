@@ -43,4 +43,4 @@ require 'xmlnuts/nuts'
 #EOS
 #pet = Pet.parse(xml_fragment)
 #
-#puts Pet.build(pet)
+#puts pet.build

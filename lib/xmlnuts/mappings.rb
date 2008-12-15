@@ -1,113 +1,124 @@
+require 'enumerator'
+require 'xmlnuts/backend'
+require 'xmlnuts/converters'
+
 module XmlNuts
-  class Mapping
-    attr_reader :name, :xmlname, :xmlns, :type, :options, :converter
+  module Mappings
+    class Mapping
+      include XmlBackend
 
-    def initialize(name, type, options)
-      case type
-      when Array
-        raise ArgumentError, "invalid value for type: #{type}" if type.length != 1
-        options[:item_type] = type.first
-        @converter = Converters.create!(:list, options)
-      when Class
-        options[:object_type] = type
-      else
-        @converter = Converters.create!(type, options)
+      attr_reader :name, :xmlname, :xmlns, :type, :options, :converter
+
+      def initialize(name, type, options)
+        case type
+        when Array
+          raise ArgumentError, "invalid value for type: #{type}" if type.length != 1
+          options[:item_type] = type.first
+          @converter = Converter.create!(:list, options)
+        when Class
+          options[:object_type] = type
+        else
+          @converter = Converter.create!(type, options)
+        end
+        @name, @setter, @type, @options = name.to_sym, :"#{name}=", type, options
+        @xmlname, @xmlns = (options.delete(:xmlname) || name).to_s, options.delete(:xmlns)
+        @xmlns = @xmlns.to_s if @xmlns
       end
-      @name, @setter, @type, @options = name.to_sym, :"#{name}=", type, options
-      @xmlname, @xmlns = (options.delete(:xmlname) || name).to_s, options.delete(:xmlns)
-      @xmlns = @xmlns.to_s if @xmlns
-    end
 
-    def to_xml(backend, nut, node)
-      setxml(backend, node, toxml(backend, get(nut)))
-    end
+      def to_xml(nut, node)
+        setxml(node, get(nut))
+      end
 
-    def from_xml(backend, nut, node)
-      set(nut, froxml(backend, getxml(backend, node)))
-    end
+      def from_xml(nut, node)
+        set(nut, getxml(node))
+      end
 
-    private
-    def get(nut) #:doc:
-      nut.send(@name)
-    end
+      private
+      def get(nut)
+        nut.send(@name)
+      end
 
-    def set(nut, value) #:doc:
-      nut.send(@setter, value)
-    end
+      def set(nut, value)
+        nut.send(@setter, value)
+      end
 
-    def toxml(backend, value) #:doc:
-      @converter ? @converter.to_xml(value) : value
-    end
+      def toxml(value)
+        @converter ? @converter.to_xml(value) : value
+      end
 
-    def froxml(backend, text) #:doc:
-      @converter ? @converter.from_xml(text) : text
-    end
-  end
-
-  class ElementValueMapping < Mapping
-    private
-    def getxml(backend, node) #:doc:
-      backend.each_element_with_value(node, xmlname, xmlns) {|e, v| return v }
-      nil
-    end
-
-    def setxml(backend, node, value) #:doc:
-      backend.add_element(node, xmlname, xmlns, value)
-    end
-  end
-
-  class ElementMapping < Mapping
-    private
-    def getxml(backend, node) #:doc:
-      backend.each_element_with_value(node, xmlname, xmlns) {|el, txt| return type.parse_node(backend, type.new, el) }
-      nil
-    end
-
-    def setxml(backend, node, nut) #:doc:
-      type.build_node(backend, nut, backend.add_element(node, xmlname, xmlns, nil))
-    end
-  end
-
-  class AttributeMapping < Mapping
-    private
-    def getxml(backend, node) #:doc:
-      backend.attribute(node, xmlname, xmlns)
-    end
-
-    def setxml(backend, node, value) #:doc:
-      backend.set_attribute(node, xmlname, xmlns, value)
-    end
-  end
-
-  class ElementValuesMapping < Mapping
-    private
-    def toxml(backend, values) #:doc:
-      values.map {|x| super(backend, x) }
-    end
-
-    def froxml(backend, values) #:doc:
-      values.map {|x| super(backend, x) }
-    end
-
-    def getxml(backend, node) #:doc:
-      node && backend.enum_for(:each_element_with_value, node, xmlname, xmlns).map {|el, v| v }
-    end
-
-    def setxml(backend, node, values) #:doc:
-      values.each {|x| backend.add_element(node, xmlname, xmlns, x) } if values
-    end
-  end
-
-  class ElementsMapping < Mapping
-    private
-    def getxml(backend, node) #:doc:
-      node && backend.enum_for(:each_element_with_value, node, xmlname, xmlns).map do |el, v|
-        type.parse_node(backend, type.new, el)
+      def froxml(text)
+        @converter ? @converter.from_xml(text) : text
       end
     end
 
-    def setxml(backend, node, nuts) #:doc:
-      nuts.each {|nut| type.build_node(backend, nut, backend.add_element(node, xmlname, xmlns, nil)) } if nuts
+    module NestedMixin #:nodoc:
+      private
+      def parse(node)
+        backend.each_element_with_value(node, xmlname, xmlns) {|el, txt| return type.parse_node(type.new, el) }
+      end
+
+      def build(node, nut)
+        nut && type.build_node(nut, backend.add_element(node, xmlname, xmlns, nil))
+      end
+    end
+
+    module ElementsMixin #:nodoc:
+      private
+      def getxml(node)
+        node && backend.enum_for(:each_element_with_value, node, xmlname, xmlns).map {|el, v| froxml(v) }
+      end
+
+      def setxml(node, values)
+        values.each {|x| toxml(node, x) } if values
+      end
+
+      def toxml(value, node)
+        super(value)
+      end
+    end
+
+    class ElementValue < Mapping
+      private
+      def getxml(node)
+        backend.each_element_with_value(node, xmlname, xmlns) {|e, v| return froxml(v) }
+        nil
+      end
+
+      def setxml(node, value)
+        backend.add_element(node, xmlname, xmlns, toxml(value))
+      end
+    end
+
+    class Element < Mapping
+      include NestedMixin
+
+      private
+      alias getxml parse
+      alias setxml build
+    end
+
+    class Attribute < Mapping
+      private
+      def getxml(node)
+        froxml(backend.attribute(node, xmlname, xmlns))
+      end
+
+      def setxml(node, value)
+        backend.set_attribute(node, xmlname, xmlns, toxml(value))
+      end
+    end
+
+    class ElementValues < Mapping
+      include ElementsMixin
+    end
+
+    class Elements < Mapping
+      include NestedMixin
+      include ElementsMixin
+
+      private
+      alias froxml parse
+      alias toxml build
     end
   end
 end

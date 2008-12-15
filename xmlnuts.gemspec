@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.0.2'
-  s.date = '2008-12-14'
+  s.version = '0.0.3'
+  s.date = '2008-12-15'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making xml<->ruby binding easy'
@@ -19,6 +19,8 @@ gemspec = Gem::Specification.new do |s|
     lib/xmlnuts/nuts.rb
     lib/xmlnuts/mappings.rb
     lib/xmlnuts/converters.rb
+    lib/xmlnuts/backend.rb
+    lib/xmlnuts/rexml.rb
   )
 
   s.test_files = %w(

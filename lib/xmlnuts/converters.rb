@@ -1,5 +1,7 @@
+require 'time'
+
 module XmlNuts
-  module Converters
+  module Converter
     def self.lookup(type)
       lookup!(type)
     rescue ArgumentError
@@ -22,21 +24,7 @@ module XmlNuts
       lookup!(type).new(options)
     end
 
-    class Convert_nested #:nodoc:
-      def initialize(options)
-        @type = options[:object_type]
-      end
-
-      def to_xml(nut)
-        nut
-      end
-
-      def from_xml(node)
-        node
-      end
-    end
-
-    class Convert_string #:nodoc:
+    class Convert_string
       def initialize(options)
         @whitespace = options[:whitespace] || :trim
       end
@@ -55,7 +43,7 @@ module XmlNuts
       end
     end
 
-    class Convert_boolean < Convert_string #:nodoc:
+    class Convert_boolean < Convert_string
       def initialize(options)
         super
         @format = options[:format] || :truefalse
@@ -82,7 +70,7 @@ module XmlNuts
       end
     end
 
-    class Convert_integer < Convert_string #:nodoc:
+    class Convert_integer < Convert_string
       def initialize(options)
         super
       end
@@ -96,7 +84,7 @@ module XmlNuts
       end
     end
 
-    class Convert_datetime < Convert_string #:nodoc:
+    class Convert_datetime < Convert_string
       def initialize(options)
         super
         @fraction_digits = options[:fraction_digits] || 0
@@ -106,15 +94,15 @@ module XmlNuts
         time && time.xmlschema(@fraction_digits)
       end
 
-      def self.from_xml(string)
+      def from_xml(string)
         string && Time.parse(super(string, options))
       end
     end
 
-    class Convert_list #:nodoc:
+    class Convert_list
       def initialize(options)
         @item_type = options[:item_type] || :string
-        @item_converter = Converters.create!(@item_type, options)
+        @item_converter = Converter.create!(@item_type, options)
       end
 
       def to_xml(array)
