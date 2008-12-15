@@ -11,6 +11,8 @@ require 'xmlnuts/nuts'
 #
 #  namespaces :pipi => 'a', :piz => 'b'
 #
+#  root 'anus', :xmlns => :piz
+#
 #  element :eats, [:string], :xmlname => :ration, :xmlns => 'a'
 #  element :species, :string, :whitespace => :collapse
 #  elements :paws, :string, :xmlname => :paw
@@ -22,7 +24,7 @@ require 'xmlnuts/nuts'
 #end
 #
 #xml_fragment = <<-EOS
-#        <mypet xmlns:pizda="b" height=' 12 ' pizda:has-tail=' yes  '>
+#        <mypet xmlns='lol' xmlns:pizda="b" height=' 12 ' pizda:has-tail=' yes  '>
 #          <species>
 #silly
 #              mouse

@@ -2,40 +2,50 @@ require 'rexml/document'
 require 'xmlnuts/backend'
 
 class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
-  def source(source, options)
+  def parse(source, options)
     case source
-    when REXML::Node
-      source
-    when String
-      doc = REXML::Document.new(source)
-      doc.root
-    else
-      nil
-    end
-  end
-
-  def build(nut, destination, options)
-    case destination
-    when :string, :document, :object, String, IO
-      doc = REXML::Document.new
-    when REXML::Node
-      node = destination
-      doc = node.document
+    when nil
+      return nil
     when REXML::Document
-      doc = destination
+      node = source.root
+    when REXML::Node
+      node = source
+    when String, IO
+      node = REXML::Document.new(source).root
     else
       raise ArgumentError, 'invalid destination'
     end
-    node = doc.root || doc.add_element('root') unless node
-    node = nut.class.build_node(nut, node)
-    case destination
+    node && yield(node)
+  end
+
+  def build(result, options)
+    case result
+    when :string, :document, :object, String, IO
+      doc = REXML::Document.new
+    when REXML::Document
+      doc = result
+    when REXML::Node
+      node, doc = result, result.document
+    else
+      raise ArgumentError, 'invalid destination'
+    end
+    node ||= doc.root
+    unless node
+      name, ns, prefix = options[:xmlname], options[:xmlns], options[:xmlns_prefix]
+      name, ns = "#{prefix}:#{name}", nil if prefix
+      node = add_element(doc, name, ns, nil)
+    end
+
+    yield node
+
+    case result
     when :string
       doc.to_s
     when String
-      destination.replace(doc.to_s)
+      result.replace(doc.to_s)
     when IO
-      doc.write(destination)
-      destination
+      doc.write(result)
+      result
     when REXML::Document, :document
       doc
     when REXML::Node, :object
@@ -48,6 +58,7 @@ class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
   end
 
   def each_element_with_value(context, name, ns)
+    ns = context.namespace unless ns
     REXML::XPath.each(context, "ns:#{name}", 'ns' => ns) {|el| yield el, el.text }
   end
 
@@ -69,15 +80,15 @@ class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
     elem
   end
 
+  private
   def to_prefixed_name(context, name, ns, prefix_required)
     if ns
       if prefix = context.namespaces.invert[ns]
-        return "#{prefix}:#{name}", nil
+        name, ns = "#{prefix}:#{name}", nil
       else
         raise ArgumentError, "no prefix defined for #{ns}" if prefix_required
       end
-    else
-      return name, ns
     end
+    return name, ns
   end
 end

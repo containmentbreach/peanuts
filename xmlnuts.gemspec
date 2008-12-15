@@ -1,6 +1,6 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.0.3'
+  s.version = '0.0.4'
   s.date = '2008-12-15'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'

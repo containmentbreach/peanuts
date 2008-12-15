@@ -5,11 +5,26 @@ require 'xmlnuts/converters'
 module XmlNuts
   module Mappings
     class Mapping
+      attr_reader :xmlname, :xmlns, :options
+
+      def initialize(xmlname, options)
+        @xmlname, @xmlns, @options = xmlname.to_s, options.delete(:xmlns), options
+      end
+    end
+
+    class Root < Mapping
+      def initialize(xmlname, options = {})
+        super
+      end
+    end
+
+    class MemberMapping < Mapping
       include XmlBackend
 
-      attr_reader :name, :xmlname, :xmlns, :type, :options, :converter
+      attr_reader :name, :type, :converter
 
       def initialize(name, type, options)
+        super(options.delete(:xmlname) || name, options)
         case type
         when Array
           raise ArgumentError, "invalid value for type: #{type}" if type.length != 1
@@ -20,9 +35,7 @@ module XmlNuts
         else
           @converter = Converter.create!(type, options)
         end
-        @name, @setter, @type, @options = name.to_sym, :"#{name}=", type, options
-        @xmlname, @xmlns = (options.delete(:xmlname) || name).to_s, options.delete(:xmlns)
-        @xmlns = @xmlns.to_s if @xmlns
+        @name, @setter, @type = name.to_sym, :"#{name}=", type
       end
 
       def to_xml(nut, node)
@@ -55,6 +68,7 @@ module XmlNuts
       private
       def parse(node)
         backend.each_element_with_value(node, xmlname, xmlns) {|el, txt| return type.parse_node(type.new, el) }
+        nil
       end
 
       def build(node, nut)
@@ -77,7 +91,7 @@ module XmlNuts
       end
     end
 
-    class ElementValue < Mapping
+    class ElementValue < MemberMapping
       private
       def getxml(node)
         backend.each_element_with_value(node, xmlname, xmlns) {|e, v| return froxml(v) }
@@ -89,7 +103,7 @@ module XmlNuts
       end
     end
 
-    class Element < Mapping
+    class Element < MemberMapping
       include NestedMixin
 
       private
@@ -97,7 +111,7 @@ module XmlNuts
       alias setxml build
     end
 
-    class Attribute < Mapping
+    class Attribute < MemberMapping
       private
       def getxml(node)
         froxml(backend.attribute(node, xmlname, xmlns))
@@ -108,11 +122,11 @@ module XmlNuts
       end
     end
 
-    class ElementValues < Mapping
+    class ElementValues < MemberMapping
       include ElementsMixin
     end
 
-    class Elements < Mapping
+    class Elements < MemberMapping
       include NestedMixin
       include ElementsMixin
 

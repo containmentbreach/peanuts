@@ -9,13 +9,13 @@ module XmlNuts #:nodoc:
       other.extend(ClassMethods)
     end
 
-    # See also Nut#build
+    # See also Nut
     module ClassMethods
       include XmlBackend
       include Mappings
 
-      #    namespaces(hash) -> a Hash
-      #    namespaces       -> a Hash
+      #    namespaces(hash) -> Hash
+      #    namespaces       -> Hash
       #
       # Updates and returns class-level prefix mappings.
       # When given a hash of mappings merges it over current.
@@ -32,14 +32,36 @@ module XmlNuts #:nodoc:
         mappings ? @namespaces.update(mappings) : @namespaces
       end
 
+      #    root(xmlname[, :xmlns => ...]) -> Mappings::Root
+      #    root                           -> Mappings::Root
+      #
+      # Defines element name.
+      # TODO: moar details
+      #
+      # === Arguments
+      # +xmlname+:: Element name
+      # +options+:: +:xmlns+ => Element namespace
+      #
+      # === Example:
+      #    class Cat
+      #      include XmlNuts::Nut
+      #      ...
+      #      root :kitteh, :xmlns => 'urn:lol'
+      #      ...
+      #    end
+      def root(xmlname = nil, options = {})
+        @root = Root.new(xmlname, prepare_options(options)) if xmlname
+        @root ||= Root.new('root')
+      end
+
       #    element(name, [type[, options]]) -> Mappings::Element or Mappings::ElementValue
       #
       # Defines single-element mapping.
       #
       # === Arguments
       # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted. (see +Converter+)
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+)
+      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
+      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
       #
       # === Example:
       #    class Cat
@@ -51,7 +73,7 @@ module XmlNuts #:nodoc:
       #    end
       def element(name, type = :string, options = {})
         define_accessor name
-        (mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, options)).last
+        (mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, prepare_options(options))).last
       end
 
       #    elements(name, [type[, options]]) -> Mappings::Element or Mappings::ElementValue
@@ -60,8 +82,8 @@ module XmlNuts #:nodoc:
       #
       # === Arguments
       # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted. (see +Converter+)
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+)
+      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
+      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
       #
       # === Example:
       #    class RichCat
@@ -73,7 +95,7 @@ module XmlNuts #:nodoc:
       #    end
       def elements(name, type = :string, options = {})
         define_accessor name
-        (mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, options)).last
+        (mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, prepare_options(options))).last
       end
 
       #    attribute(name, [type[, options]]) -> Mappings::Attribute or Mappings::AttributeValue
@@ -82,8 +104,8 @@ module XmlNuts #:nodoc:
       #
       # === Arguments
       # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted. (see +Converter+)
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+)
+      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
+      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
       #
       # === Example:
       #    class Cat
@@ -95,7 +117,7 @@ module XmlNuts #:nodoc:
       #    end
       def attribute(name, type = :string, options = {})
         define_accessor name
-        mappings << Attribute.new(name, type, options)
+        mappings << Attribute.new(name, type, prepare_options(options))
       end
 
       #    mappings -> Array
@@ -106,9 +128,7 @@ module XmlNuts #:nodoc:
       end
 
       def parse(source, options = {})
-        source = backend.source(source, options)
-        raise ArgumentError, 'invalid source' unless source
-        parse_node(new, source)
+        backend.parse(source, options) {|node| new.parse_node(node) }
       end
 
       def build_node(nut, node) #:nodoc:
@@ -123,8 +143,18 @@ module XmlNuts #:nodoc:
       end
 
       private
+      def prepare_options(options)
+        ns = options[:xmlns]
+        if ns.is_a?(Symbol)
+          raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = namespaces[ns]
+        end
+        options
+      end
+
       def define_accessor(name)
-        raise "#{name}: name is already defined or reserved" if method_defined?(name) || method_defined?("#{name}=")
+        if method_defined?(name) || method_defined?("#{name}=")
+          raise ArgumentError, "#{name}: name already defined or reserved"
+        end
         attr_accessor name
       end
 
@@ -133,10 +163,14 @@ module XmlNuts #:nodoc:
       end
     end
 
+    def parse(source, options = {})
+      backend.parse(source, options) {|node| parse_node(node) }
+    end
+
     #    build([options])              -> root element or string
     #    build([options])              -> root element or string
     #    build(destination[, options]) -> destination
-    #    
+    #
     # Defines attribute mapping.
     #
     # === Arguments
@@ -148,20 +182,30 @@ module XmlNuts #:nodoc:
     # - an instance of +String+:    the contents of the string will be replaced with
     #                the generated XML.
     # - an instance of +IO+: the IO will be written to.
-    # +options+::     Backend-specific options.
+    # +options+::     Backend-specific options
     #
     # === Example:
     #    cat = Cat.new
     #    cat.name = 'Pussy'
     #    puts cat.build
-    #
+    #    ...
     #    doc = REXML::Document.new
     #    cat.build(doc)
     #    puts doc.to_s
-    def build(destination = :string, options = {})
-      bui
-      options, destination = destination, :string if destination.is_a?(Hash)
-      backend.build(self, destination, options)
+    def build(result = :string, options = {})
+      options, result = result, :string if result.is_a?(Hash)
+      root = self.class.root
+      options[:xmlname] ||= root.xmlname
+      options[:xmlns_prefix] = self.class.namespaces.invert[options[:xmlns] ||= root.xmlns]
+      backend.build(result, options) {|node| build_node(node) }
+    end
+
+    def parse_node(node) #:nodoc:
+      self.class.parse_node(self, node)
+    end
+
+    def build_node(node) #:nodoc:
+      self.class.build_node(self, node)
     end
   end
 end
