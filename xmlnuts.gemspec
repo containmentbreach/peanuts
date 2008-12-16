@@ -14,7 +14,7 @@ gemspec = Gem::Specification.new do |s|
   s.require_paths = %w(lib)
 
   s.files = %w(
-    README MIT-LICENSE
+    README.rdoc MIT-LICENSE
     lib/xmlnuts.rb
     lib/xmlnuts/nuts.rb
     lib/xmlnuts/mappings.rb
@@ -28,8 +28,8 @@ gemspec = Gem::Specification.new do |s|
   )
 
   s.has_rdoc = true
-  s.rdoc_options = %w(--line-numbers --inline-source --main README)
-  s.extra_rdoc_files = %w(README MIT-LICENSE)
+  s.rdoc_options = %w(--line-numbers --inline-source --main README.rdoc)
+  s.extra_rdoc_files = %w(README.rdoc MIT-LICENSE)
 
   # s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
 end

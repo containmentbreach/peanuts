@@ -13,12 +13,12 @@ Rake::GemPackageTask.new(Gem::Specification.load('xmlnuts.gemspec')) do |p|
 end
 
 Rake::RDocTask.new do |rdoc|
-  files =['README', 'MIT-LICENSE', 'lib/**/*.rb']
+  files =['README.rdoc', 'MIT-LICENSE', 'lib/**/*.rb']
   rdoc.rdoc_files.add(files)
-  rdoc.main = "README" # page to start on
+  rdoc.main = "README.rdoc" # page to start on
   rdoc.title = "XmlNuts Documentation"
   rdoc.rdoc_dir = 'doc/rdoc' # rdoc output folder
-  rdoc.options << '--line-numbers'
+  rdoc.options << '--line-numbers --inline-source --main README.rdoc'
 end
 
 Rake::TestTask.new do |t|
