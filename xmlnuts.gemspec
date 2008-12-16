@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.0.4'
-  s.date = '2008-12-15'
+  s.version = '0.0.5'
+  s.date = '2008-12-16'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making xml<->ruby binding easy'
