@@ -1,3 +1,5 @@
+$KCODE = 'u'
+
 require 'rubygems'
 require 'rake'
 require 'rake/clean'

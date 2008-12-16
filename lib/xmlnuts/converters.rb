@@ -36,9 +36,9 @@ module XmlNuts
       def from_xml(string)
         return nil unless string
         string = case @whitespace
-        when :trim then string.strip
+        when :trim then string.gsub(/(\A\s*)|(\s*\Z)/, '')
         when :preserve then string
-        when :collapse then string.gsub(/\s+/, ' ').strip
+        when :collapse then string.gsub(/\s+/, ' ').gsub(/\A\s*|\s*\Z|\s*(?=\s)/, '')
         end
       end
     end

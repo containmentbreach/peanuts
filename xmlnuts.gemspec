@@ -1,12 +1,12 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.0.5'
+  s.version = '0.1'
   s.date = '2008-12-16'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
-  s.summary = 'Making xml<->ruby binding easy'
+  s.summary = 'Making XML <-> Ruby binding easy'
   s.description = <<-EOS
-    XmlNuts is an XML to ruby object and back again mapping library.
+    XmlNuts is an XML to Ruby and back again mapping library.
   EOS
   s.homepage = 'http://github.com/pipa/xmlnuts'
   s.rubygems_version = '1.3.1'

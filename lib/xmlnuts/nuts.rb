@@ -54,7 +54,8 @@ module XmlNuts #:nodoc:
         @root ||= Root.new('root')
       end
 
-      #    element(name, [type[, options]]) -> Mappings::Element or Mappings::ElementValue
+      #    element(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
+      #    element(name[, options]) { block } -> Mappings::Element
       #
       # Defines single-element mapping.
       #
@@ -62,6 +63,7 @@ module XmlNuts #:nodoc:
       # +name+::    Accessor name
       # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
       # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
+      # +block+::   An anonymous class definition.
       #
       # === Example:
       #    class Cat
@@ -71,12 +73,14 @@ module XmlNuts #:nodoc:
       #      element :cheeseburger, Cheeseburger, :xmlname => :cheezburger
       #      ...
       #    end
-      def element(name, type = :string, options = {})
+      def element(name, type = :string, options = {}, &block)
+        type, options = prepare_args(type, options, &block)
         define_accessor name
         (mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, prepare_options(options))).last
       end
 
-      #    elements(name, [type[, options]]) -> Mappings::Element or Mappings::ElementValue
+      #    elements(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
+      #    elements(name[, options]) { block } -> Mappings::Element
       #
       # Defines multiple elements mapping.
       #
@@ -84,16 +88,18 @@ module XmlNuts #:nodoc:
       # +name+::    Accessor name
       # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
       # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
+      # +block+::   An anonymous class definition.
       #
       # === Example:
       #    class RichCat
       #      include XmlNuts::Nut
       #      ...
       #      elements :ration, :string, :whitespace => :collapse
-      #      elements :cheeseburgers, Cheeseburger, :xmlname => :cheezburgers
+      #      elements :cheeseburgers, Cheeseburger, :xmlname => :cheezburger
       #      ...
       #    end
-      def elements(name, type = :string, options = {})
+      def elements(name, type = :string, options = {}, &block)
+        type, options = prepare_args(type, options, &block)
         define_accessor name
         (mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, prepare_options(options))).last
       end
@@ -122,7 +128,7 @@ module XmlNuts #:nodoc:
 
       #    mappings -> Array
       #
-      # Returns all previously defined XmlNuts mappings on a class.
+      # Returns all XmlNuts mappings defined on a class.
       def mappings
         @mappings ||= []
       end
@@ -143,6 +149,18 @@ module XmlNuts #:nodoc:
       end
 
       private
+      def prepare_args(type, options, &block)
+        if block_given?
+          options = type if type.is_a?(Hash)
+          type = Class.new
+          type.class_eval do
+            include XmlNuts::Nut
+            class_eval(&block)
+          end
+        end
+        return type, prepare_options(options)
+      end
+
       def prepare_options(options)
         ns = options[:xmlns]
         if ns.is_a?(Symbol)

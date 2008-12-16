@@ -13,16 +13,20 @@ end
 class Cat
   include XmlNuts::Nut
 
-  namespaces :lol => 'urn:lol', :p => 'b'
+  namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-  root 'kitteh', :xmlns => 'lol'
+  root 'kitteh', :xmlns => :lol
 
-  element :eats, [:string], :xmlname => :ration, :xmlns => :lol
-  element :friend, :string, :whitespace => :collapse, :xmlns => 'c'
+  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
+  attribute :ears, :integer
+
+  element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
+  element :name, :string, :whitespace => :collapse, :xmlns => 'urn:x-lol:kthnx'
   elements :paws, :string, :xmlname => :paw
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'b'
-  attribute :height, :integer
+  element :friends, :xmlname => :pals do
+    elements :names, :string, :xmlname => :pal
+  end
 
   element :cheezburger, Cheezburger
 end
@@ -30,39 +34,46 @@ end
 class ParsingTest < Test::Unit::TestCase
   def setup
     @xml_fragment = <<-EOS
-        <mypet xmlns='lol' xmlns:aa='urn:lol' xmlns:bb='b' height=' 12 ' bb:has-tail=' yes  '>
-          <friend xmlns='c'>
-silly
-              mouse
-          </friend>
-          <aa:ration>
+        <kitteh xmlns='urn:x-lol' xmlns:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
+          <name xmlns='urn:x-lol:kthnx'>
+              Silly
+              Tom
+              Писта
+          </name>
+          <kthnx:eats>
             tigers
             lions
-          </aa:ration>
+          </kthnx:eats>
+          <pals>
+            <pal>Chrissy</pal>
+            <pal>Missy</pal>
+            <pal>Sissy</pal>
+          </pals>
           <paw>  one</paw>
           <paw> two </paw>
           <paw>three</paw>
           <paw>four</paw>
-          <cheezburger weight='2'>
-          </cheezburger>
-          <cub age='4'>
-          </cub>
-        </mypet>
+          <cheezburger weight='2' />
+        </kitteh>
     EOS
     @cat = Cat.parse(@xml_fragment)
   end
 
   context "A cat" do
-    should 'be a friend of a silly mouse' do
-      assert_equal 'silly mouse', @cat.friend
+    should 'be named Silly Tom' do
+      assert_equal 'Silly Tom Писта', @cat.name
     end
 
     should 'eat tigers and lions' do
-      assert_equal ['tigers', 'lions'], @cat.eats
+      assert_equal %w(tigers lions), @cat.ration
     end
 
-    should 'be 12 meters tall' do
-      assert_equal 12, @cat.height
+    should 'be a friend of Chrissy, Missy & Sissy' do
+      assert_equal ['Chrissy', 'Missy', 'Sissy'], @cat.friends.names
+    end
+
+    should 'have 2 ears' do
+      assert_equal 2, @cat.ears
     end
 
     should 'have tail' do
@@ -85,7 +96,7 @@ silly
       @burger = @cat.cheezburger
     end
 
-    should 'weigh 2 kg' do
+    should 'weigh 2 pounds' do
       assert_equal 2, @burger.weight
     end
   end
