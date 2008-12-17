@@ -18,7 +18,7 @@ Rake::RDocTask.new do |rdoc|
   rdoc.main = "README.rdoc" # page to start on
   rdoc.title = "XmlNuts Documentation"
   rdoc.rdoc_dir = 'doc/rdoc' # rdoc output folder
-  rdoc.options << '--line-numbers --inline-source --main README.rdoc'
+  rdoc.options << '--line-numbers' << '--inline-source'
 end
 
 Rake::TestTask.new do |t|

@@ -3,13 +3,11 @@ require 'xmlnuts/mappings'
 module XmlNuts #:nodoc:
   # See also +ClassMethods+
   module Nut
-    include XmlBackend
-
     def self.included(other) #:nodoc:
       other.extend(ClassMethods)
     end
 
-    # See also Nut
+    # See also +Nut+.
     module ClassMethods
       include XmlBackend
       include Mappings
@@ -39,8 +37,8 @@ module XmlNuts #:nodoc:
       # TODO: moar details
       #
       # === Arguments
-      # +xmlname+:: Element name
-      # +options+:: +:xmlns+ => Element namespace
+      # [+xmlname+] Element name
+      # [+options+] <tt>:xmlns => <tt> Element namespace
       #
       # === Example:
       #    class Cat
@@ -60,10 +58,10 @@ module XmlNuts #:nodoc:
       # Defines single-element mapping.
       #
       # === Arguments
-      # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
-      # +block+::   An anonymous class definition.
+      # [+name+]    Accessor name
+      # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
+      # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
+      # [+block+]   An anonymous class definition.
       #
       # === Example:
       #    class Cat
@@ -85,10 +83,10 @@ module XmlNuts #:nodoc:
       # Defines multiple elements mapping.
       #
       # === Arguments
-      # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
-      # +block+::   An anonymous class definition.
+      # [+name+]    Accessor name
+      # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
+      # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
+      # [+block+]   An anonymous class definition.
       #
       # === Example:
       #    class RichCat
@@ -109,9 +107,9 @@ module XmlNuts #:nodoc:
       # Defines attribute mapping.
       #
       # === Arguments
-      # +name+::    Accessor name
-      # +type+::    Element type. +:string+ assumed if omitted (see +Converter+).
-      # +options+:: +:xmlname+, +:xmlns+, converter options (see +Converter+).
+      # [+name+]    Accessor name
+      # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
+      # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
       #
       # === Example:
       #    class Cat
@@ -128,13 +126,20 @@ module XmlNuts #:nodoc:
 
       #    mappings -> Array
       #
-      # Returns all XmlNuts mappings defined on a class.
+      # Returns all mappings defined on a class.
       def mappings
         @mappings ||= []
       end
 
       def parse(source, options = {})
-        backend.parse(source, options) {|node| new.parse_node(node) }
+        backend.parse(source, options) {|node| parse_node(new, node) }
+      end
+
+      def build(nut, result = :string, options = {})
+        options, result = result, :string if result.is_a?(Hash)
+        options[:xmlname] ||= root.xmlname
+        options[:xmlns_prefix] = namespaces.invert[options[:xmlns] ||= root.xmlns]
+        backend.build(result, options) {|node| build_node(nut, node) }
       end
 
       def build_node(nut, node) #:nodoc:
@@ -192,15 +197,14 @@ module XmlNuts #:nodoc:
     # Defines attribute mapping.
     #
     # === Arguments
-    # +destination+:: Can be given a symbol a backend-specific object,
-    #                 an instance of String or IO classes.
-    # - +:string+   -> will return an XML string.
-    # - +:document+ -> will return a backend specific document object.
-    # - +:object+   -> will return a backend specific object. New document will be created.
-    # - an instance of +String+:    the contents of the string will be replaced with
-    #                the generated XML.
-    # - an instance of +IO+: the IO will be written to.
-    # +options+::     Backend-specific options
+    # [+destination+]
+    #   Can be given a symbol a backend-specific object, an instance of String or IO classes.
+    #   [<tt>:string</tt>]   will return an XML string.
+    #   [<tt>:document</tt>] will return a backend specific document object.
+    #   [<tt>:object</tt>]   will return a backend specific object. New document will be created.
+    #   [an instance of +String+] the contents of the string will be replaced with the generated XML.
+    #   [an instance of +IO+]     the IO will be written to.
+    # [+options+] Backend-specific options
     #
     # === Example:
     #    cat = Cat.new
@@ -211,19 +215,7 @@ module XmlNuts #:nodoc:
     #    cat.build(doc)
     #    puts doc.to_s
     def build(result = :string, options = {})
-      options, result = result, :string if result.is_a?(Hash)
-      root = self.class.root
-      options[:xmlname] ||= root.xmlname
-      options[:xmlns_prefix] = self.class.namespaces.invert[options[:xmlns] ||= root.xmlns]
-      backend.build(result, options) {|node| build_node(node) }
-    end
-
-    def parse_node(node) #:nodoc:
-      self.class.parse_node(self, node)
-    end
-
-    def build_node(node) #:nodoc:
-      self.class.build_node(self, node)
+      self.class.build(self, result, options)
     end
   end
 end

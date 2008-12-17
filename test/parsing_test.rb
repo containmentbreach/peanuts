@@ -4,10 +4,12 @@ require 'test/unit'
 require 'shoulda'
 require 'lib/xmlnuts'
 
+
 class Cheezburger
   include XmlNuts::Nut
 
-  attribute :weight, :integer
+  attribute :weight, :float
+  attribute :price, :decimal
 end
 
 class Cat
@@ -21,7 +23,7 @@ class Cat
   attribute :ears, :integer
 
   element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
-  element :name, :string, :whitespace => :collapse, :xmlns => 'urn:x-lol:kthnx'
+  element :name, :string, :xmlns => 'urn:x-lol:kthnx'
   elements :paws, :string, :xmlname => :paw
 
   element :friends, :xmlname => :pals do
@@ -38,7 +40,6 @@ class ParsingTest < Test::Unit::TestCase
           <name xmlns='urn:x-lol:kthnx'>
               Silly
               Tom
-              Писта
           </name>
           <kthnx:eats>
             tigers
@@ -53,7 +54,7 @@ class ParsingTest < Test::Unit::TestCase
           <paw> two </paw>
           <paw>three</paw>
           <paw>four</paw>
-          <cheezburger weight='2' />
+          <cheezburger price='2.05' weight='14.5547' />
         </kitteh>
     EOS
     @cat = Cat.parse(@xml_fragment)
@@ -61,7 +62,7 @@ class ParsingTest < Test::Unit::TestCase
 
   context "A cat" do
     should 'be named Silly Tom' do
-      assert_equal 'Silly Tom Писта', @cat.name
+      assert_equal 'Silly Tom', @cat.name
     end
 
     should 'eat tigers and lions' do
@@ -77,12 +78,11 @@ class ParsingTest < Test::Unit::TestCase
     end
 
     should 'have tail' do
-      assert_equal true, @cat.has_tail
+      assert @cat.has_tail
     end
 
     should 'have four paws' do
       assert_not_nil @cat.paws
-      assert_equal 4, @cat.paws.length
       assert_equal %w(one two three four), @cat.paws
     end
 
@@ -96,8 +96,12 @@ class ParsingTest < Test::Unit::TestCase
       @burger = @cat.cheezburger
     end
 
-    should 'weigh 2 pounds' do
-      assert_equal 2, @burger.weight
+    should 'weigh 14.5547 pounds' do
+      assert_equal 14.5547, @burger.weight
+    end
+
+    should 'cost $2.05' do
+      assert_equal BigDecimal('2.05'), @burger.price
     end
   end
 end
