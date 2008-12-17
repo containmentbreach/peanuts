@@ -3,9 +3,9 @@ XmlNuts is an library that allows for bidirectional mapping between Ruby objects
 Released under the MIT license.
 
 == Features
-- Type awareness (extensible)
-- XML namespaces support
-- Pluggable backends to work with different XML APIs (only REXML implemented so far)
+- Type awareness (extensible).
+- XML namespaces support.
+- Pluggable backends to work with different XML APIs (REXML implemented so far).
 
 == Installation
   gem install pipa-xmlnuts --source http://gems.github.com
