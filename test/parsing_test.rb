@@ -82,7 +82,6 @@ class ParsingTest < Test::Unit::TestCase
     end
 
     should 'have four paws' do
-      assert_not_nil @cat.paws
       assert_equal %w(one two three four), @cat.paws
     end
 

@@ -1,5 +1,6 @@
 == Introduction
 XmlNuts is an library that allows for bidirectional mapping between Ruby objects and XML.
+
 Released under the MIT license.
 
 == Features
@@ -11,10 +12,10 @@ Released under the MIT license.
   gem install pipa-xmlnuts --source http://gems.github.com
 
 == Usage
-Please see example below.
-See also XmlNuts::Nut, XmlNuts::Nut::ClassMethods
+Please see an example below.
+See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 
-== Issue tracking
+== Reporting bugs
 Please file bugs and feature requests at http://pipa.lighthouseapp.com/projects/21756-xmlnuts
 
 == Example
@@ -74,8 +75,6 @@ Please file bugs and feature requests at http://pipa.lighthouseapp.com/projects/
     assert_equal ['Chrissy', 'Missy', 'Sissy'], cat.friends.names
     assert_equal 2, cat.ears
     assert_equal true, cat.has_tail
-    assert_not_nil cat.paws
-    assert_equal 4, cat.paws.length
     assert_equal %w(one two three four), cat.paws
     assert_kind_of Cheezburger, cat.cheezburger
     assert_equal 2, cat.cheezburger.weight
