@@ -16,6 +16,7 @@ gemspec = Gem::Specification.new do |s|
   s.files = %w(
     README.rdoc MIT-LICENSE
     lib/xmlnuts.rb
+    lib/pipa-xmlnuts.rb
     lib/xmlnuts/nuts.rb
     lib/xmlnuts/mappings.rb
     lib/xmlnuts/converters.rb
