@@ -15,6 +15,12 @@ Released under the MIT license.
 Please see an example below.
 See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 
+== TODO
+- Inheritance
+- Mixins
+- More mappings?
+- More types?
+
 == Reporting bugs
 Please file bugs and feature requests at http://pipa.lighthouseapp.com/projects/21756-xmlnuts
 

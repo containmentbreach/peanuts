@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'xmlnuts'
-  s.version = '0.2.2'
-  s.date = '2009-01-05'
+  s.version = '0.2.3'
+  s.date = '2009-01-06'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -14,7 +14,7 @@ gemspec = Gem::Specification.new do |s|
   s.require_paths = %w(lib)
 
   s.files = %w(
-    README.rdoc MIT-LICENSE
+    README.rdoc MIT-LICENSE Rakefile
     lib/xmlnuts.rb
     lib/pipa-xmlnuts.rb
     lib/xmlnuts/nuts.rb
@@ -32,5 +32,14 @@ gemspec = Gem::Specification.new do |s|
   s.rdoc_options = %w(--line-numbers --inline-source --main README.rdoc)
   s.extra_rdoc_files = %w(README.rdoc MIT-LICENSE)
 
-  # s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
+  if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
+    s.specification_version = 2
+
+    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+      s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
+    else
+    end
+  else
+  end
 end
