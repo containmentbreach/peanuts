@@ -62,53 +62,49 @@ module XmlNuts
       def froxml(text)
         @converter ? @converter.from_xml(text) : text
       end
-    end
 
-    module NestedMixin #:nodoc:
-      private
-      def parse(node)
-        backend.each_element_with_value(node, xmlname, xmlns) {|el, txt| return type.parse_node(type.new, el) }
+      def each_element(node, &block)
+        node && backend.each_element(node, xmlname, xmlns, &block)
         nil
       end
 
-      def build(node, nut)
-        nut && type.build_node(nut, backend.add_element(node, xmlname, xmlns, nil))
-      end
-    end
-
-    module ElementsMixin #:nodoc:
-      private
-      def getxml(node)
-        node && backend.enum_for(:each_element_with_value, node, xmlname, xmlns).map {|el, v| froxml(v) }
+      def add_element(node, value = nil)
+        backend.add_element(node, xmlname, xmlns, value)
       end
 
-      def setxml(node, values)
-        values.each {|x| toxml(node, x) } if values
+      def value(node)
+        backend.value(node)
       end
 
-      def toxml(value, node)
-        super(value)
+      def parse(node)
+        type.parse_node(type.new, node)
+      end
+
+      def build(node, nut, dest_node)
+        nut && type.build_node(nut, dest_node)
       end
     end
 
     class ElementValue < MemberMapping
       private
       def getxml(node)
-        backend.each_element_with_value(node, xmlname, xmlns) {|e, v| return froxml(v) }
-        nil
+        each_element(node) {|e| return froxml(value(e)) }
       end
 
       def setxml(node, value)
-        backend.add_element(node, xmlname, xmlns, toxml(value))
+        add_element(node, toxml(value))
       end
     end
 
     class Element < MemberMapping
-      include NestedMixin
-
       private
-      alias getxml parse
-      alias setxml build
+      def getxml(node)
+        each_element(node) {|e| return parse(e) }
+      end
+
+      def setxml(node, value)
+        build(node, value, add_element(node))
+      end
     end
 
     class Attribute < MemberMapping
@@ -123,16 +119,36 @@ module XmlNuts
     end
 
     class ElementValues < MemberMapping
-      include ElementsMixin
+      private
+      def each_value(node)
+        each_element(node) {|x| yield froxml(value(x)) }
+      end
+
+      def getxml(node)
+        enum_for(:each_value, node).to_a
+      end
+
+      def setxml(node, values)
+        unless node
+          raise 'fuck'
+        end
+        values.each {|v| add_element(node, toxml(v)) } if values
+      end
     end
 
     class Elements < MemberMapping
-      include NestedMixin
-      include ElementsMixin
-
       private
-      alias froxml parse
-      alias toxml build
+      def each_object(node)
+        each_element(node) {|e| yield parse(e) }
+      end
+
+      def getxml(node)
+        enum_for(:each_object, node)
+      end
+
+      def setxml(node, elements)
+        elements.each {|e| build(node, e, add_element(node)) } if elements
+      end
     end
   end
 end

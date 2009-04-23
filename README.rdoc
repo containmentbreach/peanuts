@@ -22,7 +22,7 @@ See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 - More types?
 
 === Bugs & such
-http://pipa.lighthouseapp.com/projects/21756-xmlnuts
+Please report via Github issue tracking.
 
 === Example
     class Cheezburger

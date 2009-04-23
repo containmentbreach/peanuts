@@ -1,5 +1,6 @@
 #$:.unshift File.join(File.dirname(__FILE__),'..','lib')
 
+require 'bigdecimal'
 require 'test/unit'
 require 'shoulda'
 require 'lib/xmlnuts'
@@ -31,6 +32,9 @@ class Cat
   end
 
   element :cheezburger, Cheezburger
+  element :moar_cheezburgers do
+    elements :cheezburger, Cheezburger
+  end
 end
 
 class ParsingTest < Test::Unit::TestCase
@@ -55,6 +59,10 @@ class ParsingTest < Test::Unit::TestCase
           <paw>three</paw>
           <paw>four</paw>
           <cheezburger price='2.05' weight='14.5547' />
+          <moar_cheezburgers>
+            <cheezburger price='19' weight='685.940' />
+            <cheezburger price='7.40' weight='9356.7' />
+          </moar_cheezburgers>
         </kitteh>
     EOS
     @cat = Cat.parse(@xml_fragment)
@@ -77,7 +85,7 @@ class ParsingTest < Test::Unit::TestCase
       assert_equal 2, @cat.ears
     end
 
-    should 'have tail' do
+    should 'have a tail' do
       assert @cat.has_tail
     end
 

@@ -13,7 +13,7 @@ class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
     when String, IO
       node = REXML::Document.new(source).root
     else
-      raise ArgumentError, 'invalid destination'
+      raise ArgumentError, 'invalid source'
     end
     node && yield(node)
   end
@@ -57,9 +57,13 @@ class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
     namespaces.each {|prefix, uri| context.add_namespace(prefix.to_s, uri) }
   end
 
-  def each_element_with_value(context, name, ns)
+  def each_element(context, name, ns, &block)
     ns = context.namespace unless ns
-    REXML::XPath.each(context, "ns:#{name}", 'ns' => ns) {|el| yield el, el.text }
+    REXML::XPath.each(context, "ns:#{name}", 'ns' => ns, &block)
+  end
+
+  def value(node)
+    node.text
   end
 
   def attribute(context, name, ns)
