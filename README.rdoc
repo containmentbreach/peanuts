@@ -24,6 +24,8 @@ See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 === Bugs & such
 Please report via Github issue tracking.
 
+Free hint: If you liek mudkipz^W^Wfeel like generous today you can tip me at http://tipjoy.com/u/pisuka
+
 === Example
     class Cheezburger
       include XmlNuts::Nut
