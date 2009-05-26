@@ -21,6 +21,9 @@ See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 - More mappings?
 - More types?
 
+=== Docs
+http://rdoc.info/projects/pipa/xmlnuts
+
 === Bugs & such
 Please report via Github issue tracking.
 
