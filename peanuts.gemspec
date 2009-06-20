@@ -1,27 +1,27 @@
 gemspec = Gem::Specification.new do |s|
-  s.name = 'xmlnuts'
-  s.version = '0.2.5'
-  s.date = '2009-04-26'
+  s.name = 'peanuts'
+  s.version = '1.0'
+  s.date = '2009-06-21'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
   s.description = <<-EOS
-    XmlNuts is an XML to Ruby and back again mapping library.
+    Peanuts is an XML to Ruby and back again mapping library.
   EOS
-  s.homepage = 'http://github.com/pipa/xmlnuts'
+  s.homepage = 'http://github.com/omg/peanuts'
   s.rubygems_version = '1.3.1'
 
   s.require_paths = %w(lib)
 
   s.files = %w(
     README.rdoc MIT-LICENSE Rakefile
-    lib/xmlnuts.rb
-    lib/pipa-xmlnuts.rb
-    lib/xmlnuts/nuts.rb
-    lib/xmlnuts/mappings.rb
-    lib/xmlnuts/converters.rb
-    lib/xmlnuts/backend.rb
-    lib/xmlnuts/rexml.rb
+    lib/peanuts.rb
+    lib/omg-peanuts.rb
+    lib/peanuts/nuts.rb
+    lib/peanuts/mappings.rb
+    lib/peanuts/converters.rb
+    lib/peanuts/backend.rb
+    lib/peanuts/rexml.rb
   )
 
   s.test_files = %w(

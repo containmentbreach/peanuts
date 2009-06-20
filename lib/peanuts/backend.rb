@@ -1,10 +1,10 @@
 require 'monitor'
 
-module XmlNuts
+module Peanuts
   module XmlBackend
     extend MonitorMixin
 
-    autoload :REXMLBackend, 'xmlnuts/rexml'
+    autoload :REXMLBackend, 'peanuts/rexml'
 
     def self.default
       synchronize do
@@ -23,11 +23,11 @@ module XmlNuts
     end
 
     def self.current
-      Thread.current[:xmlnuts_xml_backend] || default
+      Thread.current[XmlBackend.name] || default
     end
 
     def self.current=(backend)
-      Thread.current[:xmlnuts_xml_backend] = backend
+      Thread.current[XmlBackend.name] = backend
     end
 
     private

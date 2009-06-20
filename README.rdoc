@@ -1,5 +1,5 @@
 === Introduction
-XmlNuts is an library that allows for bidirectional mapping between Ruby objects and XML.
+Peanuts is an library that allows for bidirectional mapping between Ruby objects and XML.
 
 Released under the MIT license.
 
@@ -9,11 +9,11 @@ Released under the MIT license.
 - Pluggable backends to work with different XML APIs (REXML implemented so far).
 
 === Installation
-  gem install pipa-xmlnuts --source http://gems.github.com
+  gem install omg-peanuts --source http://gems.github.com
 
 === Usage
 Please see an example below.
-See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
+See also +Peanuts+, +Peanuts::ClassMethods+
 
 === TODO
 - Inheritance
@@ -22,22 +22,20 @@ See also +XmlNuts::Nut+, +XmlNuts::Nut::ClassMethods+
 - More types?
 
 === Docs
-http://rdoc.info/projects/pipa/xmlnuts
+http://rdoc.info/projects/omg/peanuts
 
 === Bugs & such
 Please report via Github issue tracking.
 
-Free hint: If you liek mudkipz^W^Wfeel like generous today you can tip me at http://tipjoy.com/u/pisuka
-
 === Example
     class Cheezburger
-      include XmlNuts::Nut
+      include Peanuts
 
       attribute :weight, :integer
     end
 
     class Cat
-      include XmlNuts::Nut
+      include Peanuts
 
       namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
@@ -91,3 +89,16 @@ Free hint: If you liek mudkipz^W^Wfeel like generous today you can tip me at htt
     assert_equal 2, cat.cheezburger.weight
     ...
     puts cat.build
+
+
+=== See also
+* http://github.com/omg/threadpool -- Thread pool implementation
+* http://github.com/omg/statelogic -- A simple state machine for ActiveRecord
+
+
+
+Free hint: If you liek mudkipz^W^Wfeel like generous today you can tip me at http://tipjoy.com/u/pisuka
+
+
+Copyright (c) 2009 Igor Gunko, released under the MIT license
+

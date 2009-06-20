@@ -1,8 +1,8 @@
 require 'enumerator'
-require 'xmlnuts/backend'
-require 'xmlnuts/converters'
+require 'peanuts/backend'
+require 'peanuts/converters'
 
-module XmlNuts
+module Peanuts
   module Mappings
     class Mapping
       attr_reader :xmlname, :xmlns, :options

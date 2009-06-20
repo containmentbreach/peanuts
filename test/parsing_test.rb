@@ -2,19 +2,20 @@
 
 require 'bigdecimal'
 require 'test/unit'
+require 'rubygems'
 require 'shoulda'
-require 'lib/xmlnuts'
+require 'lib/peanuts'
 
 
 class Cheezburger
-  include XmlNuts::Nut
+  include Peanuts
 
   attribute :weight, :float
   attribute :price, :decimal
 end
 
 class Cat
-  include XmlNuts::Nut
+  include Peanuts
 
   namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 

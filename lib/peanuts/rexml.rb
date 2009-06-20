@@ -1,7 +1,7 @@
 require 'rexml/document'
-require 'xmlnuts/backend'
+require 'peanuts/backend'
 
-class XmlNuts::XmlBackend::REXMLBackend #:nodoc:
+class Peanuts::XmlBackend::REXMLBackend #:nodoc:
   def parse(source, options)
     case source
     when nil

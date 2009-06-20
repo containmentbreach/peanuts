@@ -1,4 +1,4 @@
-module XmlNuts
+module Peanuts
   autoload :Time, 'time'
   autoload :BigDecimal, 'bigdecimal'
 
