@@ -66,7 +66,8 @@ class ParsingTest < Test::Unit::TestCase
           </moar_cheezburgers>
         </kitteh>
     EOS
-    @cat = Cat.parse(@xml_fragment)
+    s = Peanuts::XML::Stream::Parser.new
+    @cat = Cat.parse(s.parse(@xml_fragment, :string))
   end
 
   context "A cat" do

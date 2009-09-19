@@ -1,14 +1,40 @@
-require 'enumerator'
+require 'forwardable'
 require 'peanuts/backend'
 require 'peanuts/converters'
+require 'peanuts/xml/footprint'
 
 module Peanuts
   module Mappings
+    class Footprint
+      extend Forwardable
+      include Peanuts::XML::Footprint
+
+      def initialize(mapping)
+        @mapping = mapping
+      end
+
+      def_delegator :@mapping, :node_type
+      def_delegator :@mapping, :xmlname, :name
+      def_delegator :@mapping, :xmlns, :ns
+    end
+
     class Mapping
       attr_reader :xmlname, :xmlns, :options
 
       def initialize(xmlname, options)
         @xmlname, @xmlns, @options = xmlname.to_s, options.delete(:xmlns), options
+      end
+
+      def footprint
+        Footprint.new(self)
+      end
+
+      def node_type
+        @@node_type
+      end
+
+      def self.node_type(node_type)
+        @@node_type = node_type
       end
     end
 
@@ -19,8 +45,6 @@ module Peanuts
     end
 
     class MemberMapping < Mapping
-      include XmlBackend
-
       attr_reader :name, :type, :converter
 
       def initialize(name, type, options)
@@ -43,7 +67,7 @@ module Peanuts
       end
 
       def from_xml(nut, node)
-        set(nut, getxml(node))
+        set(nut, getxml2(node, get(nut)))
       end
 
       private
@@ -63,21 +87,12 @@ module Peanuts
         @converter ? @converter.from_xml(text) : text
       end
 
-      def each_element(node, &block)
-        node && backend.each_element(node, xmlname, xmlns, &block)
-        nil
+      def getxml2(node, acc)
+        getxml(node)
       end
 
-      def add_element(node, value = nil)
-        backend.add_element(node, xmlname, xmlns, value)
-      end
-
-      def value(node)
-        backend.value(node)
-      end
-
-      def parse(node)
-        type.parse_node(type.new, node)
+      def parse(events)
+        type.parse_events(type.new, events)
       end
 
       def build(node, nut, dest_node)
@@ -86,9 +101,11 @@ module Peanuts
     end
 
     class ElementValue < MemberMapping
+      node_type :element
+
       private
       def getxml(node)
-        each_element(node) {|e| return froxml(value(e)) }
+        froxml(node.read_text)
       end
 
       def setxml(node, value)
@@ -97,9 +114,11 @@ module Peanuts
     end
 
     class Element < MemberMapping
+      node_type :element
+
       private
       def getxml(node)
-        each_element(node) {|e| return parse(e) }
+        parse(node.subtree)
       end
 
       def setxml(node, value)
@@ -108,24 +127,28 @@ module Peanuts
     end
 
     class Attribute < MemberMapping
+      node_type :attribute
+
       private
       def getxml(node)
-        froxml(backend.attribute(node, xmlname, xmlns))
+        froxml(node.value)
       end
 
       def setxml(node, value)
         backend.set_attribute(node, xmlname, xmlns, toxml(value))
       end
+
+      def node_type
+        :attribute
+      end
     end
 
     class ElementValues < MemberMapping
-      private
-      def each_value(node)
-        each_element(node) {|x| yield froxml(value(x)) }
-      end
+      node_type :element
 
-      def getxml(node)
-        enum_for(:each_value, node).to_a
+      private
+      def getxml2(node, acc)
+        (acc || []) << node.read_text
       end
 
       def setxml(node, values)
@@ -134,20 +157,26 @@ module Peanuts
         end
         values.each {|v| add_element(node, toxml(v)) } if values
       end
+
+      def node_type
+        :element
+      end
     end
 
     class Elements < MemberMapping
-      private
-      def each_object(node)
-        each_element(node) {|e| yield parse(e) }
-      end
+      node_type :element
 
-      def getxml(node)
-        enum_for(:each_object, node)
+      private
+      def getxml2(node, acc)
+        (acc || []) << parse(node.subtree)
       end
 
       def setxml(node, elements)
         elements.each {|e| build(node, e, add_element(node)) } if elements
+      end
+
+      def node_type
+        :element
       end
     end
   end

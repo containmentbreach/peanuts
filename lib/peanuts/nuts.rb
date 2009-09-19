@@ -1,4 +1,5 @@
 require 'peanuts/mappings'
+require 'peanuts/mapper'
 
 module Peanuts #:nodoc:
   # See also +ClassMethods+
@@ -20,7 +21,7 @@ module Peanuts #:nodoc:
     # 
     # === Example:
     #    class Cat
-    #      include PeaNuts
+    #      include Peanuts
     #      namespaces :lol => 'urn:lol', ...
     #      ...
     #    end
@@ -123,15 +124,15 @@ module Peanuts #:nodoc:
       mappings << Attribute.new(name, type, prepare_options(options))
     end
 
-    #    mappings -> Array
+    #    mappings -> Mapper
     #
     # Returns all mappings defined on a class.
     def mappings
-      @mappings ||= []
+      @mappings ||= Mapper.new
     end
 
-    def parse(source, options = {})
-      backend.parse(source, options) {|node| parse_node(new, node) }
+    def restore(events)
+      mappings.parse(new, events)
     end
 
     def build(nut, result = :string, options = {})
@@ -147,9 +148,8 @@ module Peanuts #:nodoc:
       node
     end
 
-    def parse_node(nut, node) #:nodoc:
-      callem(:from_xml, nut, node)
-      nut
+    def parse_events(nut, events) #:nodoc:
+      @mappings.parse(nut, events)
     end
 
     private
