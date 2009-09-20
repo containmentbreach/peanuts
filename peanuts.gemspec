@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'peanuts'
-  s.version = '1.0'
-  s.date = '2009-06-21'
+  s.version = '2.0'
+  s.date = '2009-09-21'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -20,8 +20,12 @@ gemspec = Gem::Specification.new do |s|
     lib/peanuts/nuts.rb
     lib/peanuts/mappings.rb
     lib/peanuts/converters.rb
-    lib/peanuts/backend.rb
-    lib/peanuts/rexml.rb
+    lib/peanuts/mapper.rb
+    lib/peanuts/source.rb
+    lib/peanuts/xml.rb
+    lib/peanuts/xml/reader.rb
+    lib/peanuts/xml/footprint.rb
+    lib/peanuts/xml/libxml.rb
   )
 
   s.test_files = %w(
@@ -31,6 +35,8 @@ gemspec = Gem::Specification.new do |s|
   s.has_rdoc = true
   s.rdoc_options = %w(--line-numbers --main README.rdoc)
   s.extra_rdoc_files = %w(README.rdoc MIT-LICENSE)
+
+  s.add_dependency('libxml-ruby', [">= 1.1.3"])
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION

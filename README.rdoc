@@ -1,4 +1,6 @@
 === Introduction
+*This is currently undergoing some rewrite. 2.x branch will introduce minor api incompatibilities.*
+
 Peanuts is an library that allows for bidirectional mapping between Ruby objects and XML.
 
 Released under the MIT license.
@@ -9,6 +11,10 @@ Released under the MIT license.
 - Pluggable backends to work with different XML APIs (REXML implemented so far).
 
 === Installation
+Stable branch 1.x available from Gemcutter
+  gem install peanuts --source http://gemcutter.org
+
+Development branch 2.x available from Github. buggy/broken/missing docs
   gem install omg-peanuts --source http://gems.github.com
 
 === Usage
