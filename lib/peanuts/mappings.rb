@@ -4,7 +4,25 @@ require 'peanuts/converters'
 require 'peanuts/xml/footprint'
 
 module Peanuts
-  module Mappings
+  class Mapping
+    attr_reader :xmlname, :xmlns, :options
+
+    def initialize(xmlname, options)
+      @xmlname, @xmlns, @options = xmlname.to_s, options.delete(:xmlns), options
+    end
+
+    def footprint
+      Footprint.new(self)
+    end
+
+    def node_type
+      @@node_type
+    end
+
+    def self.node_type(node_type)
+      @@node_type = node_type
+    end
+
     class Footprint
       extend Forwardable
       include Peanuts::XML::Footprint
@@ -17,27 +35,9 @@ module Peanuts
       def_delegator :@mapping, :xmlname, :name
       def_delegator :@mapping, :xmlns, :ns
     end
+  end
 
-    class Mapping
-      attr_reader :xmlname, :xmlns, :options
-
-      def initialize(xmlname, options)
-        @xmlname, @xmlns, @options = xmlname.to_s, options.delete(:xmlns), options
-      end
-
-      def footprint
-        Footprint.new(self)
-      end
-
-      def node_type
-        @@node_type
-      end
-
-      def self.node_type(node_type)
-        @@node_type = node_type
-      end
-    end
-
+  module Mappings
     class Root < Mapping
       def initialize(xmlname, options = {})
         super
@@ -68,6 +68,10 @@ module Peanuts
 
       def from_xml(nut, node)
         set(nut, getxml2(node, get(nut)))
+      end
+
+      def clear(nut)
+        set(nut, nil)
       end
 
       private
@@ -118,7 +122,7 @@ module Peanuts
 
       private
       def getxml(node)
-        parse(node.subtree)
+        parse(node)
       end
 
       def setxml(node, value)
@@ -148,7 +152,7 @@ module Peanuts
 
       private
       def getxml2(node, acc)
-        (acc || []) << node.read_text
+        (acc || []) << froxml(node.read_text)
       end
 
       def setxml(node, values)
@@ -168,7 +172,7 @@ module Peanuts
 
       private
       def getxml2(node, acc)
-        (acc || []) << parse(node.subtree)
+        (acc || []) << parse(node)
       end
 
       def setxml(node, elements)

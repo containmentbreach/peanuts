@@ -96,9 +96,4 @@ Please report via Github issue tracking.
 * http://github.com/omg/statelogic -- A simple state machine for ActiveRecord
 
 
-
-Free hint: If you liek mudkipz^W^Wfeel like generous today you can tip me at http://tipjoy.com/u/pisuka
-
-
 Copyright (c) 2009 Igor Gunko, released under the MIT license
-

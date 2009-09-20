@@ -12,6 +12,17 @@ module Peanuts #:nodoc:
     include XmlBackend
     include Mappings
 
+    def self.extended(other)
+      other.instance_eval do
+        @mappings = Mapper.new
+      end
+    end
+
+    #    mappings -> Mapper
+    #
+    # Returns all mappings defined on a class.
+    attr_reader :mappings
+
     #    namespaces(hash) -> Hash
     #    namespaces       -> Hash
     #
@@ -26,8 +37,7 @@ module Peanuts #:nodoc:
     #      ...
     #    end
     def namespaces(mappings = nil)
-      @namespaces ||= {}
-      mappings ? @namespaces.update(mappings) : @namespaces
+      mappings ? @mappings.namespaces.update(mappings) : @mappings.namespaces
     end
 
     #    root(xmlname[, :xmlns => ...]) -> Mappings::Root
@@ -48,8 +58,8 @@ module Peanuts #:nodoc:
     #      ...
     #    end
     def root(xmlname = nil, options = {})
-      @root = Root.new(xmlname, prepare_options(options)) if xmlname
-      @root ||= Root.new('root')
+      @mappings.root = Root.new(xmlname, prepare_options(options)) if xmlname
+      @mappings.root
     end
 
     #    element(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
@@ -72,9 +82,10 @@ module Peanuts #:nodoc:
     #      ...
     #    end
     def element(name, type = :string, options = {}, &block)
-      type, options = prepare_args(type, options, &block)
-      define_accessor name
-      (mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, prepare_options(options))).last
+      prepare_args(type, options, block) do |type, options|
+        define_accessor name
+        (@mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, options)).last
+      end
     end
 
     #    elements(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
@@ -97,9 +108,10 @@ module Peanuts #:nodoc:
     #      ...
     #    end
     def elements(name, type = :string, options = {}, &block)
-      type, options = prepare_args(type, options, &block)
-      define_accessor name
-      (mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, prepare_options(options))).last
+      prepare_args(type, options, block) do |type, options|
+        define_accessor name
+        (@mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, options)).last
+      end
     end
 
     #    attribute(name, [type[, options]]) -> Mappings::Attribute or Mappings::AttributeValue
@@ -121,18 +133,14 @@ module Peanuts #:nodoc:
     #    end
     def attribute(name, type = :string, options = {})
       define_accessor name
-      mappings << Attribute.new(name, type, prepare_options(options))
-    end
-
-    #    mappings -> Mapper
-    #
-    # Returns all mappings defined on a class.
-    def mappings
-      @mappings ||= Mapper.new
+      @mappings << Attribute.new(name, type, prepare_options({:xmlns => nil}.merge(options)))
     end
 
     def restore(events)
-      mappings.parse(new, events)
+      nut = new
+      @mappings.clear(nut)
+      @mappings.parse(nut, events.find_element)
+      nut
     end
 
     def build(nut, result = :string, options = {})
@@ -153,20 +161,25 @@ module Peanuts #:nodoc:
     end
 
     private
-    def prepare_args(type, options, &block)
-      if block_given?
-        options = type if type.is_a?(Hash)
+    def prepare_args(type, options, blk)
+      if blk
+        options = prepare_options(type) if type.is_a?(Hash)
         type = Class.new
-        type.class_eval do
-          include Peanuts
-          class_eval(&block)
+        yield(type, options).tap do |m|
+          type.instance_eval do
+            include Peanuts
+            mappings.set_context(m, namespaces)
+            instance_eval(&blk)
+          end
         end
+      else
+        options = prepare_options(options)
+        yield type, options
       end
-      return type, prepare_options(options)
     end
 
     def prepare_options(options)
-      ns = options[:xmlns]
+      ns = options.fetch(:xmlns) {|k| options[k] = root && root.xmlns || @mappings.container && @mappings.container.xmlns }
       if ns.is_a?(Symbol)
         raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = namespaces[ns]
       end
@@ -178,10 +191,6 @@ module Peanuts #:nodoc:
         raise ArgumentError, "#{name}: name already defined or reserved"
       end
       attr_accessor name
-    end
-
-    def callem(method, *args)
-      mappings.each {|m| m.send(method, *args) }
     end
   end
 

@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'peanuts'
-require 'peanuts/xml/stream'
 
 xml_fragment = <<-EOS
         <kitteh xmlns='urn:x-lol' xmlns:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
@@ -48,19 +47,22 @@ class Cat
   element :name, :string, :xmlns => 'urn:x-lol:kthnx'
   element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
 
-    element :friends, :xmlname => :pals, :xmlns => :lol do
-      elements :names, :string, :xmlname => :pal, :xmlns => 'urn:x-lol'
-    end
+  element :friends, :xmlname => :pals do
+    elements :names, :string, :xmlname => :pal
+  end
 
-  element :cheezburger, Cheezburger, :xmlns => :lol
-    element :moar_cheezburgers, :xmlns => :lol do
-      elements :cheezburger, Cheezburger, :xmlns => 'urn:x-lol'
-    end
+  element :cheezburger, Cheezburger
+  element :moar_cheezburgers do
+    elements :cheezburger, Cheezburger
+  end
 end
 
-s = Peanuts::XML::Stream::Reader.from_string(xml_fragment)
+s = Peanuts::XML::Reader.from_string(xml_fragment)
 
-m = Peanuts::Marshaller.new
+#s.skip_to_element
+for e in s.find_element
+  puts e.footprint
+end
 
-cat = Cat.restore(s)
-puts cat.inspect
+#cat = Cat.restore(s)
+#puts cat.inspect
