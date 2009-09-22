@@ -1,5 +1,20 @@
 require 'enumerator'
-require 'peanuts/source'
+
+class Hash
+  def from_namespace(ns)
+    rx = /^#{Regexp.quote(ns.to_s)}_(.*)$/
+    inject({}) do |a, p|
+      a[$1.to_sym] = p[1] if p[0].to_s =~ rx
+      a
+    end
+  end
+
+  def from_namespace!(ns)
+    h = from_namespace(ns)
+    h.each_key {|k| delete(:"#{ns}_#{k}") }
+    h
+  end
+end
 
 module Peanuts
   module XML
@@ -19,22 +34,19 @@ module Peanuts
         obj
       end
 
-      def initialize(source, options = {})
-        @source, @schema = source, options[:schema]
-      end
+      def initialize(options = {})
 
-      def find_element
-        read until node_type == :element
-        self
-      end
-
-      def self.from(source_type, source)
-        new(Source.new(source_type, source))
       end
 
       def self.method_missing(method, *args, &block)
-        return from($1, *args, &block) if method.to_s =~ /^from_(.*)/
-        super
+        case method.to_s
+        when /^from_(.*)$/
+          new($1.to_sym, *args, &block)
+        when /^(.*)_schema_from_(.*)$/
+          schema($2.to_sym, args[0], $1.to_sym)
+        else
+          super
+        end
       end
 
       def footprint

@@ -1,5 +1,4 @@
 require 'forwardable'
-require 'peanuts/backend'
 require 'peanuts/converters'
 require 'peanuts/xml/footprint'
 
@@ -39,8 +38,14 @@ module Peanuts
 
   module Mappings
     class Root < Mapping
+      node_type :element
+
       def initialize(xmlname, options = {})
         super
+      end
+
+      def to_xml(writer, &block)
+        writer.write(node_type, xmlname, xmlns, &block)
       end
     end
 
@@ -96,7 +101,7 @@ module Peanuts
       end
 
       def parse(events)
-        type.parse_events(type.new, events)
+        type.send(:_restore, events)
       end
 
       def build(node, nut, dest_node)
@@ -109,11 +114,11 @@ module Peanuts
 
       private
       def getxml(node)
-        froxml(node.read_text)
+        froxml(node.read_value)
       end
 
-      def setxml(node, value)
-        add_element(node, toxml(value))
+      def setxml(writer, value)
+        writer.write(node_type, xmlname, xmlns, toxml(value))
       end
     end
 
@@ -135,7 +140,7 @@ module Peanuts
 
       private
       def getxml(node)
-        froxml(node.value)
+        froxml(node.read_value)
       end
 
       def setxml(node, value)
@@ -152,7 +157,7 @@ module Peanuts
 
       private
       def getxml2(node, acc)
-        (acc || []) << froxml(node.read_text)
+        (acc || []) << froxml(node.read_value)
       end
 
       def setxml(node, values)

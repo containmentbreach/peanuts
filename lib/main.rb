@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'peanuts'
+require 'peanuts/xml/libxml'
 
 xml_fragment = <<-EOS
         <kitteh xmlns='urn:x-lol' xmlns:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
@@ -43,26 +44,25 @@ class Cat
 
   root 'kitteh', :xmlns => :lol
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
+  #attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
   element :name, :string, :xmlns => 'urn:x-lol:kthnx'
-  element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
+  #element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
 
-  element :friends, :xmlname => :pals do
-    elements :names, :string, :xmlname => :pal
-  end
-
-  element :cheezburger, Cheezburger
-  element :moar_cheezburgers do
-    elements :cheezburger, Cheezburger
-  end
+#  element :friends, :xmlname => :pals do
+#    elements :names, :string, :xmlname => :pal
+#  end
+#
+#  element :cheezburger, Cheezburger
+#  element :moar_cheezburgers do
+#    elements :cheezburger, Cheezburger
+#  end
 end
 
-s = Peanuts::XML::Reader.from_string(xml_fragment)
+s = Peanuts::XML::Writer.new(1, 2)
 
-#s.skip_to_element
-for e in s.find_element
-  puts e.footprint
-end
+cat = Cat.restore_from(:string, xml_fragment)
+puts cat.inspect
 
-#cat = Cat.restore(s)
-#puts cat.inspect
+Cat.mappings.build(cat, s)
+
+puts s

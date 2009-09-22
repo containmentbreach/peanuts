@@ -1,5 +1,6 @@
 require 'peanuts/mappings'
 require 'peanuts/mapper'
+require 'peanuts/xml/reader'
 
 module Peanuts #:nodoc:
   # See also +ClassMethods+
@@ -9,7 +10,6 @@ module Peanuts #:nodoc:
 
   # See also +PeaNuts+.
   module ClassMethods
-    include XmlBackend
     include Mappings
 
     def self.extended(other)
@@ -136,11 +136,18 @@ module Peanuts #:nodoc:
       @mappings << Attribute.new(name, type, prepare_options({:xmlns => nil}.merge(options)))
     end
 
-    def restore(events)
-      nut = new
-      @mappings.clear(nut)
-      @mappings.parse(nut, events.find_element)
-      nut
+    def schema(schema = nil)
+      @mappings.schema = schema if schema
+      @mappings.schema
+    end
+
+    def restore(reader)
+      e = reader.find_element
+      e && _restore(e)
+    end
+
+    def restore_from(source_type, source, options = {})
+      restore(XML::Reader.new(source_type, source, options))
     end
 
     def build(nut, result = :string, options = {})
@@ -161,6 +168,12 @@ module Peanuts #:nodoc:
     end
 
     private
+    def _restore(events)
+      nut = new
+      @mappings.parse(nut, events)
+      nut
+    end
+
     def prepare_args(type, options, blk)
       if blk
         options = prepare_options(type) if type.is_a?(Hash)

@@ -5,6 +5,7 @@ module Peanuts
     include Enumerable
 
     attr_reader :root, :namespaces, :nscontext, :container
+    attr_accessor :schema
 
     def initialize
       @mappings, @footprints = [], {}
@@ -40,16 +41,20 @@ module Peanuts
       @mappings << (@footprints[mapping.footprint] = mapping)
     end
 
-    def parse_event(nut, event)
-      m = @footprints.fetch(event.footprint, nil)
-      m.from_xml(nut, event) if m
-    end
-
     def parse(nut, events)
       for e in events
-        parse_event(nut, e)
+        m = @footprints.fetch(e.footprint, nil)
+        m.from_xml(nut, e) if m
       end
       nut
+    end
+
+    def build(nut, writer)
+      @root.to_xml(writer) do
+        for m in @mappings
+          m.to_xml(nut, writer)
+        end
+      end
     end
 
     def clear(nut)
