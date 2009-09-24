@@ -1,38 +1,23 @@
 require 'forwardable'
 require 'peanuts/converters'
-require 'peanuts/xml/footprint'
 
 module Peanuts
   class Mapping
-    attr_reader :xmlname, :xmlns, :options
+    attr_reader :xmlname, :xmlns, :prefix, :options
 
     def initialize(xmlname, options)
-      @xmlname, @xmlns, @options = xmlname.to_s, options.delete(:xmlns), options
-    end
-
-    def footprint
-      Footprint.new(self)
+      @xmlname, @xmlns, @prefix, @options = xmlname.to_s, options.delete(:xmlns), options.delete(:prefix), options
     end
 
     def node_type
-      @@node_type
+      self.class.node_type
     end
 
-    def self.node_type(node_type)
-      @@node_type = node_type
-    end
-
-    class Footprint
-      extend Forwardable
-      include Peanuts::XML::Footprint
-
-      def initialize(mapping)
-        @mapping = mapping
+    class << self
+      def node_type(node_type = nil)
+        @node_type = node_type if node_type
+        @node_type
       end
-
-      def_delegator :@mapping, :node_type
-      def_delegator :@mapping, :xmlname, :name
-      def_delegator :@mapping, :xmlns, :ns
     end
   end
 
@@ -40,12 +25,8 @@ module Peanuts
     class Root < Mapping
       node_type :element
 
-      def initialize(xmlname, options = {})
-        super
-      end
-
       def to_xml(writer, &block)
-        writer.write(node_type, xmlname, xmlns, &block)
+        writer.write(node_type, xmlname, xmlns, prefix, &block)
       end
     end
 
@@ -104,8 +85,8 @@ module Peanuts
         type.send(:_restore, events)
       end
 
-      def build(node, nut, dest_node)
-        nut && type.build_node(nut, dest_node)
+      def build(nut, writer)
+        type.send(:_save, nut, writer)
       end
     end
 
@@ -114,11 +95,13 @@ module Peanuts
 
       private
       def getxml(node)
-        froxml(node.read_value)
+        froxml(node.value)
       end
 
       def setxml(writer, value)
-        writer.write(node_type, xmlname, xmlns, toxml(value))
+        writer.write(node_type, xmlname, xmlns, prefix) do |w|
+          w.value = toxml(value)
+        end
       end
     end
 
@@ -130,25 +113,28 @@ module Peanuts
         parse(node)
       end
 
-      def setxml(node, value)
-        build(node, value, add_element(node))
+      def setxml(writer, value)
+        writer.write(node_type, xmlname, xmlns, prefix) do |w|
+          build(value, w)
+        end
       end
     end
 
     class Attribute < MemberMapping
       node_type :attribute
 
+      def initialize(name, type, options)
+        super
+        raise ArgumentError, 'a namespaced attribute must have namespace prefix' if xmlns && !prefix
+      end
+
       private
       def getxml(node)
-        froxml(node.read_value)
+        froxml(node.value)
       end
 
       def setxml(node, value)
         backend.set_attribute(node, xmlname, xmlns, toxml(value))
-      end
-
-      def node_type
-        :attribute
       end
     end
 
@@ -157,18 +143,11 @@ module Peanuts
 
       private
       def getxml2(node, acc)
-        (acc || []) << froxml(node.read_value)
+        (acc || []) << froxml(node.value)
       end
 
       def setxml(node, values)
-        unless node
-          raise 'fuck'
-        end
         values.each {|v| add_element(node, toxml(v)) } if values
-      end
-
-      def node_type
-        :element
       end
     end
 
@@ -182,10 +161,6 @@ module Peanuts
 
       def setxml(node, elements)
         elements.each {|e| build(node, e, add_element(node)) } if elements
-      end
-
-      def node_type
-        :element
       end
     end
   end

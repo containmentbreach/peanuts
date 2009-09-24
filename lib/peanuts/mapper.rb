@@ -20,10 +20,6 @@ module Peanuts
       @root = root
     end
 
-    def ancestor_root
-      root
-    end
-
     def set_context(container, nscontext)
       @container, @nscontext = container, nscontext
     end
@@ -37,28 +33,78 @@ module Peanuts
     end
 
     def <<(mapping)
-      raise "mapping already defined for #{mapping.footprint}" if @footprints[mapping.footprint]
-      @mappings << (@footprints[mapping.footprint] = mapping)
+      fp = MappingFootprint.new(mapping)
+      raise "mapping already defined for #{fp}" if @footprints.include?(fp)
+      @mappings << (@footprints[fp] = mapping)
     end
 
-    def parse(nut, events)
-      for e in events
-        m = @footprints.fetch(e.footprint, nil)
-        m.from_xml(nut, e) if m
+    def parse(nut, reader)
+      rdfp = ReaderFootprint.new(reader)
+      reader.each do
+        m = @footprints[rdfp]
+        m.from_xml(nut, reader) if m
       end
       nut
     end
 
     def build(nut, writer)
-      @root.to_xml(writer) do
-        for m in @mappings
-          m.to_xml(nut, writer)
+      if @root
+        @root.to_xml(writer) do
+          _save(nut, writer)
         end
+      else
+        _save(nut, writer)
       end
+      writer.result
     end
 
     def clear(nut)
       @mappings.each {|m| m.clear(nut) }
+    end
+
+    private
+    def _save(nut, writer)
+      @mappings.each {|m| m.to_xml(nut, writer) }
+    end
+
+    class Footprint
+      def ==(other)
+        self.equal?(other) || other && node_type == other.node_type && name == other.name && ns == other.ns
+      end
+
+      alias eql? ==
+
+      def hash
+        node_type.hash ^ name.hash ^ ns.hash
+      end
+
+      def to_s
+        "#{node_type}(#{name}, #{ns})"
+      end
+    end
+
+    class MappingFootprint < Footprint
+      extend Forwardable
+
+      def initialize(mapping)
+        @mapping = mapping
+      end
+
+      def_delegator :@mapping, :node_type
+      def_delegator :@mapping, :xmlname, :name
+      def_delegator :@mapping, :xmlns, :ns
+    end
+
+    class ReaderFootprint < Footprint
+      extend Forwardable
+
+      def initialize(reader)
+        @reader = reader
+      end
+
+      def_delegator :@reader, :node_type
+      def_delegator :@reader, :local_name, :name
+      def_delegator :@reader, :namespace_uri, :ns
     end
   end
 end

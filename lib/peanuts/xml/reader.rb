@@ -18,52 +18,60 @@ end
 
 module Peanuts
   module XML
-    autoload :LibXMLReader, 'peanuts/xml/libxml'
+    autoload :LibXML, 'peanuts/xml/libxml'
+
+    def self.default
+      @@default ||= LibXML
+    end
+
+    def self.schema(schema_type, source, source_type = :string)
+      default.schema(schema_type, source, source_type)
+    end
+ 
+    def self.method_missing(method, *args, &block)
+      case method.to_s
+      when /^(.*)_schema_from_(.*)$/
+        XML.schema($1.to_sym, args.first, $2.to_sym)
+      else
+        super
+      end
+    end
 
     class Reader
       include Enumerable
 
-      class << self
-        attr_accessor :default
-      end
-
       def self.new(*args, &block)
-        cls = self == Reader ? self.default || LibXMLReader : self
+        cls = self == Reader ? XML.default::Reader : self
         obj = cls.allocate
         obj.send(:initialize, *args, &block)
         obj
       end
 
-      def initialize(options = {})
+      def self.method_missing(method, *args, &block)
+        case method.to_s
+        when /^from_(.*)$/
+          new(args.first, $1.to_sym, &block)
+        else
+          super
+        end
+      end
+    end
 
+    class Writer
+      def self.new(*args, &block)
+        cls = self == Writer ? XML.default::Writer : self
+        obj = cls.allocate
+        obj.send(:initialize, *args, &block)
+        obj
       end
 
       def self.method_missing(method, *args, &block)
         case method.to_s
         when /^from_(.*)$/
-          new($1.to_sym, *args, &block)
-        when /^(.*)_schema_from_(.*)$/
-          schema($2.to_sym, args[0], $1.to_sym)
+          new(args.first, $1.to_sym, &block)
         else
           super
         end
-      end
-
-      def footprint
-        @footprint ||= Footprint.new(self)
-      end
-
-      class Footprint
-        extend Forwardable
-        include Peanuts::XML::Footprint
-
-        def initialize(reader)
-          @reader = reader
-        end
-
-        def_delegator :@reader, :node_type
-        def_delegator :@reader, :local_name, :name
-        def_delegator :@reader, :namespace_uri, :ns
       end
     end
   end

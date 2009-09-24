@@ -21,7 +21,7 @@ class Cat
 
   root 'kitteh', :xmlns => :lol
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
+  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
   attribute :ears, :integer
 
   element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
@@ -66,7 +66,7 @@ class ParsingTest < Test::Unit::TestCase
           </moar_cheezburgers>
         </kitteh>
     EOS
-    @cat = Cat.restore_from(:string, @xml_fragment)
+    @cat = Cat.restore_from(@xml_fragment)
   end
 
   context "A cat" do

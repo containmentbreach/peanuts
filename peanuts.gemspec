@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'peanuts'
-  s.version = '2.0.1'
-  s.date = '2009-09-21'
+  s.version = '2.0.0'
+  s.date = '2009-09-24'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -21,10 +21,8 @@ gemspec = Gem::Specification.new do |s|
     lib/peanuts/mappings.rb
     lib/peanuts/converters.rb
     lib/peanuts/mapper.rb
-    lib/peanuts/source.rb
     lib/peanuts/xml.rb
     lib/peanuts/xml/reader.rb
-    lib/peanuts/xml/footprint.rb
     lib/peanuts/xml/libxml.rb
   )
 

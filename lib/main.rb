@@ -42,15 +42,15 @@ class Cat
 
   namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-  root 'kitteh', :xmlns => :lol
+  root 'kitteh', :xmlns => 'urn:x-lol'
 
   #attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
   element :name, :string, :xmlns => 'urn:x-lol:kthnx'
   #element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
 
-#  element :friends, :xmlname => :pals do
-#    elements :names, :string, :xmlname => :pal
-#  end
+  element :friends, :xmlname => :pals do
+    element :names, :string, :xmlname => :pal
+  end
 #
 #  element :cheezburger, Cheezburger
 #  element :moar_cheezburgers do
@@ -58,11 +58,7 @@ class Cat
 #  end
 end
 
-s = Peanuts::XML::Writer.new(1, 2)
-
 cat = Cat.restore_from(:string, xml_fragment)
 puts cat.inspect
 
-Cat.mappings.build(cat, s)
-
-puts s
+puts cat.save_to(:string)

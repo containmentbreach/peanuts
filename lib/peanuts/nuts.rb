@@ -146,8 +146,14 @@ module Peanuts #:nodoc:
       e && _restore(e)
     end
 
-    def restore_from(source_type, source, options = {})
-      restore(XML::Reader.new(source_type, source, options))
+    def restore_from(source_or_type = nil, source = nil, options = {})
+      _source_or_dest(source_or_type, source) do |source_type, source|
+        restore(XML::Reader.new(source, source_type, options))
+      end
+    end
+
+    def save(nut, writer)
+      _save(nut, writer)
     end
 
     def build(nut, result = :string, options = {})
@@ -167,11 +173,20 @@ module Peanuts #:nodoc:
       @mappings.parse(nut, events)
     end
 
+    def _source_or_dest(a, b)
+      a, b = :string, a unless a.is_a?(Symbol)
+      yield a, b
+    end
+
     private
     def _restore(events)
       nut = new
       @mappings.parse(nut, events)
       nut
+    end
+
+    def _save(nut, events)
+      @mappings.build(nut, events)
     end
 
     def prepare_args(type, options, blk)
@@ -195,6 +210,7 @@ module Peanuts #:nodoc:
       ns = options.fetch(:xmlns) {|k| options[k] = root && root.xmlns || @mappings.container && @mappings.container.xmlns }
       if ns.is_a?(Symbol)
         raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = namespaces[ns]
+        options[:prefix] = ns
       end
       options
     end
@@ -209,6 +225,10 @@ module Peanuts #:nodoc:
 
   def parse(source, options = {})
     backend.parse(source, options) {|node| parse_node(node) }
+  end
+
+  def save(writer)
+    self.class.save(self, writer)
   end
 
   #    build([options])              -> root element or string
@@ -235,7 +255,9 @@ module Peanuts #:nodoc:
   #    doc = REXML::Document.new
   #    cat.build(doc)
   #    puts doc.to_s
-  def build(result = :string, options = {})
-    self.class.build(self, result, options)
+  def save_to(dest_or_type = :string, dest = nil, options = {})
+    self.class._source_or_dest(dest_or_type, dest) do |dest_type, dest|
+      save(XML::Writer.new(dest, dest_type, options))
+    end
   end
 end
