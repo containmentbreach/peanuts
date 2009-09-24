@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'peanuts'
-  s.version = '2.0.0'
-  s.date = '2009-09-24'
+  s.version = '2.0.1'
+  s.date = '2009-09-25'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -22,12 +22,11 @@ gemspec = Gem::Specification.new do |s|
     lib/peanuts/converters.rb
     lib/peanuts/mapper.rb
     lib/peanuts/xml.rb
-    lib/peanuts/xml/reader.rb
     lib/peanuts/xml/libxml.rb
   )
 
   s.test_files = %w(
-    test/parsing_test.rb
+    spec/cat_spec.rb
   )
 
   s.has_rdoc = true
@@ -41,7 +40,7 @@ gemspec = Gem::Specification.new do |s|
     s.specification_version = 2
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency('thoughtbot-shoulda', ['>= 2.0.6'])
+      s.add_development_dependency('rspec', ['>= 1.2.8'])
     else
     end
   else

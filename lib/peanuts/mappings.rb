@@ -25,7 +25,7 @@ module Peanuts
     class Root < Mapping
       node_type :element
 
-      def to_xml(writer, &block)
+      def save(writer, &block)
         writer.write(node_type, xmlname, xmlns, prefix, &block)
       end
     end
@@ -37,7 +37,7 @@ module Peanuts
         super(options.delete(:xmlname) || name, options)
         case type
         when Array
-          raise ArgumentError, "invalid value for type: #{type}" if type.length != 1
+          raise ArgumentError, "invalid value for type: #{type.inspect}" if type.length != 1
           options[:item_type] = type.first
           @converter = Converter.create!(:list, options)
         when Class
@@ -48,12 +48,12 @@ module Peanuts
         @name, @setter, @type = name.to_sym, :"#{name}=", type
       end
 
-      def to_xml(nut, node)
-        setxml(node, get(nut))
+      def save(nut, writer)
+        save_value(writer, get(nut))
       end
 
-      def from_xml(nut, node)
-        set(nut, getxml2(node, get(nut)))
+      def restore(nut, reader)
+        set(nut, restore_value(reader, get(nut)))
       end
 
       def clear(nut)
@@ -69,99 +69,110 @@ module Peanuts
         nut.send(@setter, value)
       end
 
-      def toxml(value)
+      def to_xml(value)
         @converter ? @converter.to_xml(value) : value
       end
 
-      def froxml(text)
+      def from_xml(text)
         @converter ? @converter.from_xml(text) : text
       end
 
-      def getxml2(node, acc)
-        getxml(node)
+      def write(writer, &block)
+        writer.write(node_type, xmlname, xmlns, prefix, &block)
       end
 
-      def parse(events)
+      def restore_object(events)
         type.send(:_restore, events)
       end
 
-      def build(nut, writer)
+      def save_object(nut, writer)
         type.send(:_save, nut, writer)
       end
     end
 
-    class ElementValue < MemberMapping
-      node_type :element
-
+    module SingleMapping
       private
-      def getxml(node)
-        froxml(node.value)
+      def restore_value(reader, acc)
+        read_value(reader)
       end
 
-      def setxml(writer, value)
-        writer.write(node_type, xmlname, xmlns, prefix) do |w|
-          w.value = toxml(value)
+      def save_value(writer, value)
+        write(writer) {|w| write_value(w, value) }
+      end
+    end
+
+    module MultiMapping
+      def restore_value(reader, acc)
+        (acc || []) << read_value(reader)
+      end
+
+      def save_value(writer, values)
+        for value in values
+          write(writer) {|w| write_value(w, value) }
         end
       end
+    end
+
+    module ValueMapping
+      private
+      def read_value(reader)
+        from_xml(reader.value)
+      end
+
+      def write_value(writer, value)
+        writer.value = to_xml(value)
+      end
+    end
+
+    module ObjectMapping
+      private
+      def read_value(reader)
+        restore_object(reader)
+      end
+
+      def write_value(writer, value)
+        save_object(value, writer)
+      end
+    end
+
+    class ElementValue < MemberMapping
+      include SingleMapping
+      include ValueMapping
+
+      node_type :element
     end
 
     class Element < MemberMapping
+      include SingleMapping
+      include ObjectMapping
+
       node_type :element
-
-      private
-      def getxml(node)
-        parse(node)
-      end
-
-      def setxml(writer, value)
-        writer.write(node_type, xmlname, xmlns, prefix) do |w|
-          build(value, w)
-        end
-      end
     end
 
     class Attribute < MemberMapping
+      include SingleMapping
+      include ValueMapping
+
       node_type :attribute
 
       def initialize(name, type, options)
         super
         raise ArgumentError, 'a namespaced attribute must have namespace prefix' if xmlns && !prefix
       end
-
-      private
-      def getxml(node)
-        froxml(node.value)
-      end
-
-      def setxml(node, value)
-        backend.set_attribute(node, xmlname, xmlns, toxml(value))
-      end
     end
 
     class ElementValues < MemberMapping
+      include MultiMapping
+      include ValueMapping
+
       node_type :element
-
-      private
-      def getxml2(node, acc)
-        (acc || []) << froxml(node.value)
-      end
-
-      def setxml(node, values)
-        values.each {|v| add_element(node, toxml(v)) } if values
-      end
     end
 
     class Elements < MemberMapping
+      include MultiMapping
+      include ObjectMapping
+
       node_type :element
-
-      private
-      def getxml2(node, acc)
-        (acc || []) << parse(node)
-      end
-
-      def setxml(node, elements)
-        elements.each {|e| build(node, e, add_element(node)) } if elements
-      end
     end
   end
 end

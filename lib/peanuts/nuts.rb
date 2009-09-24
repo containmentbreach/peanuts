@@ -1,27 +1,28 @@
 require 'peanuts/mappings'
 require 'peanuts/mapper'
-require 'peanuts/xml/reader'
 
 module Peanuts #:nodoc:
-  # See also +ClassMethods+
   def self.included(other) #:nodoc:
-    other.extend(ClassMethods)
+    init(other)
   end
 
-  # See also +PeaNuts+.
+  def self.init(cls, ns_context = nil, default_ns = nil, &block) #:nodoc:
+    cls.instance_eval do
+      include InstanceMethods
+      extend ClassMethods
+      @mapper = Mapper.new(ns_context, default_ns)
+      instance_eval(&block) if block_given?
+    end
+  end
+
+  # See also +InstanceMethods+.
   module ClassMethods
     include Mappings
 
-    def self.extended(other)
-      other.instance_eval do
-        @mappings = Mapper.new
-      end
-    end
-
-    #    mappings -> Mapper
+    #    mapper -> Mapper
     #
-    # Returns all mappings defined on a class.
-    attr_reader :mappings
+    # Returns the mapper for the class.
+    attr_reader :mapper
 
     #    namespaces(hash) -> Hash
     #    namespaces       -> Hash
@@ -36,8 +37,8 @@ module Peanuts #:nodoc:
     #      namespaces :lol => 'urn:lol', ...
     #      ...
     #    end
-    def namespaces(mappings = nil)
-      mappings ? @mappings.namespaces.update(mappings) : @mappings.namespaces
+    def namespaces(map = nil)
+      map ? mapper.namespaces.update(map) : mapper.namespaces
     end
 
     #    root(xmlname[, :xmlns => ...]) -> Mappings::Root
@@ -58,8 +59,8 @@ module Peanuts #:nodoc:
     #      ...
     #    end
     def root(xmlname = nil, options = {})
-      @mappings.root = Root.new(xmlname, prepare_options(options)) if xmlname
-      @mappings.root
+      mapper.root = Root.new(xmlname, prepare_options(options)) if xmlname
+      mapper.root
     end
 
     #    element(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
@@ -81,10 +82,10 @@ module Peanuts #:nodoc:
     #      element :cheeseburger, Cheeseburger, :xmlname => :cheezburger
     #      ...
     #    end
-    def element(name, type = :string, options = {}, &block)
-      prepare_args(type, options, block) do |type, options|
+    def element(name, *args, &block)
+      prepare_args(args, block) do |type, options|
         define_accessor name
-        (@mappings << (type.is_a?(Class) ? Element : ElementValue).new(name, type, options)).last
+        (mapper << (type.is_a?(Class) ? Element : ElementValue).new(name, type, options)).last
       end
     end
 
@@ -107,10 +108,10 @@ module Peanuts #:nodoc:
     #      elements :cheeseburgers, Cheeseburger, :xmlname => :cheezburger
     #      ...
     #    end
-    def elements(name, type = :string, options = {}, &block)
-      prepare_args(type, options, block) do |type, options|
+    def elements(name, *args, &block)
+      prepare_args(args, block) do |type, options|
         define_accessor name
-        (@mappings << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, options)).last
+        (mapper << (type.is_a?(Class) ? Elements : ElementValues).new(name, type, options)).last
       end
     end
 
@@ -131,14 +132,16 @@ module Peanuts #:nodoc:
     #      element :cheeseburger, Cheeseburger, :xmlname => :cheezburger
     #      ...
     #    end
-    def attribute(name, type = :string, options = {})
-      define_accessor name
-      @mappings << Attribute.new(name, type, prepare_options({:xmlns => nil}.merge(options)))
+    def attribute(name, *args)
+      prepare_args(args, nil, :xmlns => nil) do |type, options|
+        define_accessor name
+        mapper << Attribute.new(name, type, options)
+      end
     end
 
     def schema(schema = nil)
-      @mappings.schema = schema if schema
-      @mappings.schema
+      mapper.schema = schema if schema
+      mapper.schema
     end
 
     def restore(reader)
@@ -146,70 +149,49 @@ module Peanuts #:nodoc:
       e && _restore(e)
     end
 
-    def restore_from(source_or_type = nil, source = nil, options = {})
-      _source_or_dest(source_or_type, source) do |source_type, source|
+    def restore_from(*args)
+      _source_or_dest(*args) do |source_type, source, options|
         restore(XML::Reader.new(source, source_type, options))
       end
     end
 
     def save(nut, writer)
       _save(nut, writer)
+      writer.result
     end
 
-    def build(nut, result = :string, options = {})
-      options, result = result, :string if result.is_a?(Hash)
-      options[:xmlname] ||= root.xmlname
-      options[:xmlns_prefix] = namespaces.invert[options[:xmlns] ||= root.xmlns]
-      backend.build(result, options) {|node| build_node(nut, node) }
-    end
-
-    def build_node(nut, node) #:nodoc:
-      backend.add_namespaces(node, namespaces)
-      callem(:to_xml, nut, node)
-      node
-    end
-
-    def parse_events(nut, events) #:nodoc:
-      @mappings.parse(nut, events)
-    end
-
-    def _source_or_dest(a, b)
-      a, b = :string, a unless a.is_a?(Symbol)
-      yield a, b
+    def _source_or_dest(*args)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      type, source = *args
+      type, source = :string, type unless type.is_a?(Symbol)
+      yield type, source, options
     end
 
     private
-    def _restore(events)
-      nut = new
-      @mappings.parse(nut, events)
+    def _restore(reader)
+      mapper.restore(nut = new, reader)
       nut
     end
 
-    def _save(nut, events)
-      @mappings.build(nut, events)
+    def _save(nut, writer)
+      mapper.save(nut, writer)
     end
 
-    def prepare_args(type, options, blk)
-      if blk
-        options = prepare_options(type) if type.is_a?(Hash)
-        type = Class.new
-        yield(type, options).tap do |m|
-          type.instance_eval do
-            include Peanuts
-            mappings.set_context(m, namespaces)
-            instance_eval(&blk)
-          end
-        end
-      else
-        options = prepare_options(options)
-        yield type, options
-      end
+    def prepare_args(args, blk, defopt = nil)
+      type, options = *args
+      type, options = (blk ? Class.new : :string), type if type.nil? || type.is_a?(Hash)
+      options ||= {}
+      options = defopt.merge(options) if defopt
+      options = prepare_options(options)
+      m = yield(type, options)
+      Peanuts.init(type, mapper.namespaces, m.xmlns, &blk) if blk
+      m
     end
 
     def prepare_options(options)
-      ns = options.fetch(:xmlns) {|k| options[k] = root && root.xmlns || @mappings.container && @mappings.container.xmlns }
+      ns = options.fetch(:xmlns) {|k| options[k] = root && root.xmlns || mapper.default_ns }
       if ns.is_a?(Symbol)
-        raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = namespaces[ns]
+        raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = mapper.namespaces[ns]
         options[:prefix] = ns
       end
       options
@@ -217,47 +199,50 @@ module Peanuts #:nodoc:
 
     def define_accessor(name)
       if method_defined?(name) || method_defined?("#{name}=")
-        raise ArgumentError, "#{name}: name already defined or reserved"
+        raise ArgumentError, "#{name.inspect}: name already defined or reserved"
       end
       attr_accessor name
     end
   end
 
-  def parse(source, options = {})
-    backend.parse(source, options) {|node| parse_node(node) }
-  end
+  # See also +ClassMethods+
+  module InstanceMethods
+    def parse(source, options = {})
+      backend.parse(source, options) {|node| parse_node(node) }
+    end
 
-  def save(writer)
-    self.class.save(self, writer)
-  end
+    def save(writer)
+      self.class.save(self, writer)
+    end
 
-  #    build([options])              -> root element or string
-  #    build([options])              -> root element or string
-  #    build(destination[, options]) -> destination
-  #
-  # Defines attribute mapping.
-  #
-  # === Arguments
-  # [+destination+]
-  #   Can be given a symbol a backend-specific object, an instance of String or IO classes.
-  #   [<tt>:string</tt>]   will return an XML string.
-  #   [<tt>:document</tt>] will return a backend specific document object.
-  #   [<tt>:object</tt>]   will return a backend specific object. New document will be created.
-  #   [an instance of +String+] the contents of the string will be replaced with the generated XML.
-  #   [an instance of +IO+]     the IO will be written to.
-  # [+options+] Backend-specific options
-  #
-  # === Example:
-  #    cat = Cat.new
-  #    cat.name = 'Pussy'
-  #    puts cat.build
-  #    ...
-  #    doc = REXML::Document.new
-  #    cat.build(doc)
-  #    puts doc.to_s
-  def save_to(dest_or_type = :string, dest = nil, options = {})
-    self.class._source_or_dest(dest_or_type, dest) do |dest_type, dest|
-      save(XML::Writer.new(dest, dest_type, options))
+    #    build([options])              -> root element or string
+    #    build([options])              -> root element or string
+    #    build(destination[, options]) -> destination
+    #
+    # Defines attribute mapping.
+    #
+    # === Arguments
+    # [+destination+]
+    #   Can be given a symbol a backend-specific object, an instance of String or IO classes.
+    #   [<tt>:string</tt>]   will return an XML string.
+    #   [<tt>:document</tt>] will return a backend specific document object.
+    #   [<tt>:object</tt>]   will return a backend specific object. New document will be created.
+    #   [an instance of +String+] the contents of the string will be replaced with the generated XML.
+    #   [an instance of +IO+]     the IO will be written to.
+    # [+options+] Backend-specific options
+    #
+    # === Example:
+    #    cat = Cat.new
+    #    cat.name = 'Pussy'
+    #    puts cat.save_to(:string)
+    #    ...
+    #    doc = LibXML::XML::Document.new
+    #    cat.save_to(doc)
+    #    puts doc.to_s
+    def save_to(*args)
+      self.class._source_or_dest(*args) do |dest_type, dest, options|
+        save(XML::Writer.new(dest, dest_type, options))
+      end
     end
   end
 end

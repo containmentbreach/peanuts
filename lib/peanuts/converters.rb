@@ -83,8 +83,8 @@ module Peanuts
       def to_xml(flag)
         return nil if flag.nil?
         string = case @format
-        when :true_false then flag ? 'true' : 'false'
-        when :yes_no then flag ? 'yes' : 'no'
+        when :true_false, :truefalse then flag ? 'true' : 'false'
+        when :yes_no, :yesno then flag ? 'yes' : 'no'
         when :numeric then flag ? '0' : '1'
         end
         super(string)

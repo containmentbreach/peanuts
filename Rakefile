@@ -5,7 +5,7 @@ require 'rake'
 require 'rake/clean'
 require 'rake/gempackagetask'
 require 'rake/rdoctask'
-require 'rake/testtask'
+require 'spec/rake/spectask'
 
 Rake::GemPackageTask.new(Gem::Specification.load('peanuts.gemspec')) do |p|
   p.need_tar = true
@@ -21,6 +21,9 @@ Rake::RDocTask.new do |rdoc|
   rdoc.options << '--line-numbers' << '--inline-source'
 end
 
-Rake::TestTask.new do |t|
-  t.test_files = FileList['test/**/*.rb']
+desc 'Run specs'
+task :test => :spec
+
+Spec::Rake::SpecTask.new do |t|
+  t.spec_files = FileList['spec/**/*.rb']
 end

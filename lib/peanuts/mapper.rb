@@ -4,28 +4,19 @@ module Peanuts
   class Mapper
     include Enumerable
 
-    attr_reader :root, :namespaces, :nscontext, :container
+    attr_reader :root, :namespaces, :ns_context, :default_ns
     attr_accessor :schema
 
-    def initialize
+    def initialize(ns_context = nil, default_ns = nil)
+      @ns_context, @default_ns = ns_context, default_ns
       @mappings, @footprints = [], {}
-      @namespaces = Hash.new do |h, k|
-        nscontext && nscontext[k] || raise(IndexError)
-      end
+      @namespaces = ns_context ? Hash.new {|h, k| ns_context[k] || raise(IndexError) } : {}
     end
 
     def root=(root)
       raise 'root already defined' if @root
-      raise 'root in nested scopes not supported' if nested?
+      # TODO raise 'root in nested scopes not supported' if nested?
       @root = root
-    end
-
-    def set_context(container, nscontext)
-      @container, @nscontext = container, nscontext
-    end
-
-    def nested?
-      !!container
     end
 
     def each(&block)
@@ -38,24 +29,17 @@ module Peanuts
       @mappings << (@footprints[fp] = mapping)
     end
 
-    def parse(nut, reader)
+    def restore(nut, reader)
       rdfp = ReaderFootprint.new(reader)
       reader.each do
         m = @footprints[rdfp]
-        m.from_xml(nut, reader) if m
+        m.restore(nut, reader) if m
       end
       nut
     end
 
-    def build(nut, writer)
-      if @root
-        @root.to_xml(writer) do
-          _save(nut, writer)
-        end
-      else
-        _save(nut, writer)
-      end
-      writer.result
+    def save(nut, writer)
+      @root ? @root.save(writer) { _save(nut, writer) } : _save(nut, writer)
     end
 
     def clear(nut)
@@ -64,7 +48,7 @@ module Peanuts
 
     private
     def _save(nut, writer)
-      @mappings.each {|m| m.to_xml(nut, writer) }
+      @mappings.each {|m| m.save(nut, writer) } if nut
     end
 
     class Footprint

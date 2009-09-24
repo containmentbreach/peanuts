@@ -24,7 +24,9 @@ xml_fragment = <<-EOS
           <cheezburger price='2.05' weight='14.5547' />
           <cheezburger price='22.05' weight='114.5547' />
           <moar_cheezburgers>
-            <cheezburger price='19' weight='685.940' />
+            <cheezburger price='19' weight='685.940'>
+              <shit>anus</shit>
+            </cheezburger>
             <cheezburger price='7.40' weight='9356.7' />
           </moar_cheezburgers>
         </kitteh>
@@ -44,18 +46,18 @@ class Cat
 
   root 'kitteh', :xmlns => 'urn:x-lol'
 
-  #attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => 'urn:x-lol:kthnx'
-  element :name, :string, :xmlns => 'urn:x-lol:kthnx'
-  #element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
+  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
+  element :name, :string, :xmlns => :kthnx#'urn:x-lol:kthnx'
+  element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
 
   element :friends, :xmlname => :pals do
-    element :names, :string, :xmlname => :pal
+    elements :names, :string, :xmlname => :pal
   end
-#
-#  element :cheezburger, Cheezburger
-#  element :moar_cheezburgers do
-#    elements :cheezburger, Cheezburger
-#  end
+
+  element :cheezburger, Cheezburger
+  element :moar_cheezburgers do
+    elements :cheezburger, Cheezburger
+  end
 end
 
 cat = Cat.restore_from(:string, xml_fragment)

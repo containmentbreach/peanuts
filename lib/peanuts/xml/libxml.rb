@@ -1,6 +1,6 @@
 require 'libxml'
 require 'forwardable'
-require 'peanuts/xml/reader'
+require 'peanuts/xml'
 
 module Peanuts
   module XML
@@ -14,7 +14,7 @@ module Peanuts
           when :io
             dest
           when :document
-            dest || LibXML::XML::Document.new
+            dest || ::LibXML::XML::Document.new
           else
             raise ArgumentError, "unrecognized destination type #{dest_type.inspect}"
           end
@@ -24,30 +24,30 @@ module Peanuts
           @dest
         end
 
-        attr_writer :value
-
-        def clear
-          @node_type = @local_name = @namespace_uri = @prefix = @value = nil
+        def value=(value)
+          case @node
+          when ::LibXML::XML::Attr
+            @node.value = value || ''
+          else
+            @node.content = value || ''
+          end
         end
 
         def write(node_type, local_name = nil, namespace_uri = nil, prefix = nil)
-          if @node_type
-            mknode
+          case node_type
+          when :element
+            @node = ::LibXML::XML::Node.new(local_name)
+            @parent << @node if @parent
+            @node.namespaces.namespace = mkns(@node, namespace_uri, prefix) if namespace_uri
+          when :attribute
+            @node = ::LibXML::XML::Attr.new(@parent, local_name, '', namespace_uri && mkns(@parent, namespace_uri, prefix))
           else
-            @node = nil
+            raise "unsupported node type #{node_type.inspect}"
           end
-
-          @node_type = node_type
-          @local_name, @namespace_uri, @prefix = local_name, namespace_uri, prefix && prefix.to_s
 
           exparent, @parent = @parent, @node
 
           yield self
-
-          if @node_type
-            mknode
-          end
-          @node = nil
 
           if exparent.nil?
             case @dest_type
@@ -62,22 +62,11 @@ module Peanuts
         end
 
         private
-        def mknode
-          @node = case @node_type
-          when :element
-            n = ::LibXML::XML::Node.new(@local_name, @value)
-            if @namespace_uri
-              ns = @parent && @parent.namespaces.find_by_href(@namespace_uri)
-              n.namespaces.namespace = ns && ns.prefix == @prefix ? ns : ::LibXML::XML::Namespace.new(n, @prefix, @namespace_uri)
-            end
-            @parent << n if @parent
-            n
-          when :attribute
-            ::LibXML::XML::Attr.new(@parent, @local_name, @value, @namespace_uri)
-          else
-            raise "unsupported node type #{@node_type.inspect}"
-          end
-          clear
+        def mkns(node, namespace_uri, prefix)
+          prefix = prefix && prefix.to_s
+          ns = node && node.namespaces.find_by_href(namespace_uri)
+          ns = ::LibXML::XML::Namespace.new(node, prefix, namespace_uri) unless ns && ns.prefix == prefix
+          ns
         end
       end
 
