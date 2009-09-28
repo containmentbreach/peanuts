@@ -50,8 +50,8 @@ class Cat
   element :name, :string, :xmlns => :kthnx#'urn:x-lol:kthnx'
   element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
 
-  element :friends, :xmlname => :pals do
-    elements :names, :string, :xmlname => :pal
+  shallow :pals do
+    elements :friends, :xmlname => :pal
   end
 
   element :cheezburger, Cheezburger
@@ -60,7 +60,10 @@ class Cat
   end
 end
 
-cat = Cat.restore_from(:string, xml_fragment)
+cat = Cat.restore_from(xml_fragment)
+
+puts cat.respond_to?(:weight)
+
 puts cat.inspect
 
 puts cat.save_to(:string)

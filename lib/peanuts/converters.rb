@@ -8,7 +8,7 @@ module Peanuts
   # numeric::     see +Convert_integer+, +Convert_decimal+, +Convert_float+
   # date & time:: see +Convert_datetime+
   # lists::       see +Convert_list+
-  module Converter
+  class Converter
     def self.lookup(type)
       lookup!(type)
     rescue ArgumentError
@@ -16,9 +16,16 @@ module Peanuts
     end
 
     def self.lookup!(type)
-      const_get("Convert_#{type}")
-    rescue NameError
-      raise ArgumentError, "converter not found for #{type}"
+      case type
+      when Symbol
+        begin
+          const_get("Convert_#{type}")
+        rescue NameError
+          raise ArgumentError, "converter not found for #{type}"
+        end
+      else
+        type
+      end
     end
 
     def self.create(type, options)
@@ -32,7 +39,7 @@ module Peanuts
     end
 
     # Who could have thought... a string.
-    # 
+    #
     # Specifier:: <tt>:string</tt>
     #
     # ==== Options:
@@ -41,7 +48,7 @@ module Peanuts
     #   [<tt>:trim</tt>] Trim whitespace from both ends.
     #   [<tt>:collapse</tt>] Collapse consecutive whitespace + trim as well.
     #   [<tt>:preserve</tt>] Keep'em all.
-    class Convert_string
+    class Convert_string < Converter
       def initialize(options)
         @whitespace = options[:whitespace] || :collapse
       end
@@ -114,7 +121,7 @@ module Peanuts
     # An integer.
     #
     # Specifier:: <tt>:integer</tt>
-    # 
+    #
     # ==== Options
     # Accepts all options of +Convert_string+.
     class Convert_integer < Convert_string
@@ -135,7 +142,7 @@ module Peanuts
     #
     # Specifier:: <tt>:decimal</tt>
     # Ruby type:: +BigDecimal+
-    # 
+    #
     # ==== Options
     # Accepts all options of +Convert_string+.
     class Convert_decimal < Convert_string
@@ -180,7 +187,7 @@ module Peanuts
     #
     # Specifier:: <tt>:datetime</tt>
     # Ruby type:: +Time+
-    # 
+    #
     # ==== Options
     # Accepts all options of +Convert_string+.
     class Convert_datetime < Convert_string
@@ -206,7 +213,7 @@ module Peanuts
     #
     # ==== Options
     # All options will be passed to the underlying type converter.
-    class Convert_list
+    class Convert_list < Converter
       def initialize(options)
         @item_type = options[:item_type] || :string
         @item_converter = Converter.create!(@item_type, options)

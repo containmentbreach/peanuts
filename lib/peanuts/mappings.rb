@@ -9,15 +9,8 @@ module Peanuts
       @xmlname, @xmlns, @prefix, @options = xmlname.to_s, options.delete(:xmlns), options.delete(:prefix), options
     end
 
-    def node_type
-      self.class.node_type
-    end
-
-    class << self
-      def node_type(node_type = nil)
-        @node_type = node_type if node_type
-        @node_type
-      end
+    def self.node_type(node_type)
+      define_method(:node_type) { node_type }
     end
   end
 
@@ -34,18 +27,33 @@ module Peanuts
       attr_reader :name, :type, :converter
 
       def initialize(name, type, options)
-        super(options.delete(:xmlname) || name, options)
-        case type
+        @bare_name = name.to_s.sub(/\?\z/, '')
+
+        super(options.delete(:xmlname) || @bare_name, options)
+
+        @converter = case type
+        when Symbol
+          Converter.create!(type, options)
+        when Class
+          type < Converter && Converter.create!(type, options)
         when Array
           raise ArgumentError, "invalid value for type: #{type.inspect}" if type.length != 1
           options[:item_type] = type.first
-          @converter = Converter.create!(:list, options)
-        when Class
-          options[:object_type] = type
+          Converter.create!(:list, options)
         else
-          @converter = Converter.create!(type, options)
+          raise ArgumentError, "invalid value for type: #{type.inspect}"
         end
-        @name, @setter, @type = name.to_sym, :"#{name}=", type
+        @name, @setter, @type = name.to_sym, :"#{@bare_name}=", type
+      end
+
+      def define_accessor(type)
+        raise ArgumentError, "#{name}: method already defined or reserved" if type.method_defined?(name)
+        raise ArgumentError, "#{@setter}: method already defined or reserved" if type.method_defined?(@setter)
+
+        type.class_eval <<-DEF
+          def #{name}; @#{@bare_name}; end
+          def #{@setter}(value); @#{@bare_name} = value; end
+        DEF
       end
 
       def save(nut, writer)
@@ -80,14 +88,6 @@ module Peanuts
       def write(writer, &block)
         writer.write(node_type, xmlname, xmlns, prefix, &block)
       end
-
-      def restore_object(events)
-        type.send(:_restore, events)
-      end
-
-      def save_object(nut, writer)
-        type.send(:_save, nut, writer)
-      end
     end
 
     module SingleMapping
@@ -107,9 +107,7 @@ module Peanuts
       end
 
       def save_value(writer, values)
-        for value in values
-          write(writer) {|w| write_value(w, value) }
-        end
+        values.each {|value| write(writer) {|w| write_value(w, value) } } if values
       end
     end
 
@@ -127,11 +125,25 @@ module Peanuts
     module ObjectMapping
       private
       def read_value(reader)
-        restore_object(reader)
+        type.send(:_restore, reader)
       end
 
       def write_value(writer, value)
-        save_object(value, writer)
+        type.send(:_save, value, writer)
+      end
+    end
+
+    module ShallowMapping
+      def restore(nut, reader)
+        type.send(:_restore, reader, nut)
+      end
+
+      def save(nut, writer)
+        write(writer) {|w| type.send(:_save, nut, w) }
+      end
+
+      def define_accessor(type)
+        type.mapper.each {|m| m.define_accessor(type) }
       end
     end
 
@@ -173,6 +185,10 @@ module Peanuts
       include ObjectMapping
 
       node_type :element
+    end
+
+    class ShallowElement < Element
+      include ShallowMapping
     end
   end
 end

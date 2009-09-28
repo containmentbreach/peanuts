@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'peanuts'
-  s.version = '2.0.1'
-  s.date = '2009-09-25'
+  s.version = '2.0.2'
+  s.date = '2009-09-29'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -17,7 +17,6 @@ gemspec = Gem::Specification.new do |s|
     README.rdoc MIT-LICENSE Rakefile
     lib/peanuts.rb
     lib/omg-peanuts.rb
-    lib/peanuts/nuts.rb
     lib/peanuts/mappings.rb
     lib/peanuts/converters.rb
     lib/peanuts/mapper.rb

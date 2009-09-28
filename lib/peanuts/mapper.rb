@@ -29,6 +29,10 @@ module Peanuts
       @mappings << (@footprints[fp] = mapping)
     end
 
+    def define_accessors(type)
+      each {|m| m.define_accessors(type) }
+    end
+
     def restore(nut, reader)
       rdfp = ReaderFootprint.new(reader)
       reader.each do
@@ -43,12 +47,12 @@ module Peanuts
     end
 
     def clear(nut)
-      @mappings.each {|m| m.clear(nut) }
+      each {|m| m.clear(nut) }
     end
 
     private
     def _save(nut, writer)
-      @mappings.each {|m| m.save(nut, writer) } if nut
+      each {|m| m.save(nut, writer) } if nut
     end
 
     class Footprint

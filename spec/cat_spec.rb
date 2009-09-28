@@ -24,6 +24,12 @@ class Cheezburger
   alias == eql?
 end
 
+class Paws
+  include Peanuts
+
+  elements :paws, :xmlname => :paw, :xmlns => 'urn:x-lol'
+end
+
 class Cat
   include Peanuts
 
@@ -31,15 +37,16 @@ class Cat
 
   root 'kitteh', :xmlns => :lol
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
+  attribute :has_tail?, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
   attribute :ears, :integer
 
   element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
   element :name, :xmlns => 'urn:x-lol:kthnx'
-  elements :paws, :xmlname => :paw
+  
+  shallow :paws, Paws
 
-  element :friends, :xmlname => :pals do
-    elements :names, :xmlname => :pal
+  shallow :pals do
+    elements :friends, :xmlname => :pal
   end
 
   element :cheezburger, Cheezburger
@@ -50,27 +57,27 @@ end
 
 shared_examples_for 'my cat' do
   it 'should be named Silly Tom' do
-    @cat.name.should eql 'Silly Tom'
+    @cat.name.should == 'Silly Tom'
   end
 
   it 'should eat tigers and lions' do
-    @cat.ration.should eql %w(tigers lions)
+    @cat.ration.should == %w(tigers lions)
   end
 
   it 'should be a friend of Chrissy, Missy & Sissy' do
-    @cat.friends.names.should eql ['Chrissy', 'Missy', 'Sissy']
+    @cat.friends.should == ['Chrissy', 'Missy', 'Sissy']
   end
 
   it 'should have 2 ears' do
-    @cat.ears.should eql 2
+    @cat.ears.should == 2
   end
 
   it 'should have a tail' do
-    @cat.has_tail.should be_true
+    @cat.should have_tail
   end
 
   it 'should have four paws' do
-    @cat.paws.should eql %w(one two three four)
+    @cat.paws.should == %w(one two three four)
   end
 
   it 'should has cheezburger' do
@@ -78,7 +85,7 @@ shared_examples_for 'my cat' do
   end
 
   it 'should has 2 moar good cheezburgerz' do
-    @cat.moar_cheezburgers.cheezburger.should eql [
+    @cat.moar_cheezburgers.cheezburger.should == [
       Cheezburger.new(685.940, BigDecimal('19')),
       Cheezburger.new(9356.7, BigDecimal('7.40'))]
   end
@@ -86,11 +93,11 @@ end
 
 shared_examples_for 'my cheezburger' do
   it 'should weigh 14.5547 pounds' do
-    @cheezburger.weight.should eql 14.5547
+    @cheezburger.weight.should == 14.5547
   end
 
   it 'should cost $2.05' do
-    @cheezburger.price.should eql BigDecimal('2.05')
+    @cheezburger.price.should == BigDecimal('2.05')
   end
 end
 
@@ -111,10 +118,12 @@ shared_examples_for 'sample kitteh' do
             <pal>Missy</pal>
             <pal>Sissy</pal>
           </pals>
-          <paw>  one</paw>
-          <paw> two </paw>
-          <paw>three</paw>
-          <paw>four</paw>
+          <paws>
+            <paw>  one</paw>
+            <paw> two </paw>
+            <paw>three</paw>
+            <paw>four</paw>
+          </paws>
           <cheezburger price='2.05' weight='14.5547' />
           <moar_cheezburgers>
             <cheezburger price='19' weight='685.940' />
