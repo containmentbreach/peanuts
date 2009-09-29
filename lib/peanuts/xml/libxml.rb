@@ -181,7 +181,7 @@ module Peanuts
         end
       end
 
-      def self.schema(schema_type, source, source_type = :string)
+      def self.schema(schema_type, source)
         schema_class = case schema_type
         when :xml_schema
           ::LibXML::XML::Schema
@@ -190,17 +190,15 @@ module Peanuts
         else
           raise ArgumentError, "unrecognized schema type #{schema_type}"
         end
-        schema = case source_type
-        when :string
-          schema_class.string(source)
-        when :io
+        schema = case source
+        when IO
           schema_class.string(source.read)
-        when :uri
-          schema_class.new(source)
-        when :document
+        when URI
+          schema_class.new(source.to_s)
+        when ::LibXML::XML::Document
           schema_class.document(source)
         else
-          raise ArgumentError, "unrecognized source type #{source_type}"
+          schema_class.string(source)
         end
 
         Schema.new(schema_type, schema)

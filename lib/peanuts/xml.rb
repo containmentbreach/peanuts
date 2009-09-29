@@ -24,14 +24,14 @@ module Peanuts
       @@default ||= LibXML
     end
 
-    def self.schema(schema_type, source, source_type = :string)
-      default.schema(schema_type, source, source_type)
+    def self.schema(schema_type, source)
+      default.schema(schema_type, source)
     end
 
     def self.method_missing(method, *args, &block)
       case method.to_s
       when /^(.*)_schema_from_(.*)$/
-        XML.schema($1.to_sym, args.first, $2.to_sym)
+        XML.schema($1.to_sym, args.first)
       else
         super
       end
@@ -46,15 +46,6 @@ module Peanuts
         obj.send(:initialize, *args, &block)
         obj
       end
-
-      def self.method_missing(method, *args, &block)
-        case method.to_s
-        when /^from_(.*)$/
-          new(args.first, $1.to_sym, &block)
-        else
-          super
-        end
-      end
     end
 
     class Writer
@@ -63,15 +54,6 @@ module Peanuts
         obj = cls.allocate
         obj.send(:initialize, *args, &block)
         obj
-      end
-
-      def self.method_missing(method, *args, &block)
-        case method.to_s
-        when /^from_(.*)$/
-          new(args.first, $1.to_sym, &block)
-        else
-          super
-        end
       end
     end
   end

@@ -247,7 +247,7 @@ module Peanuts #:nodoc:
     end
   end
 
-  class ShallowObject #:nodoc:
+  module ShallowObject #:nodoc:
     def self.included(other)
       init(other)
     end
