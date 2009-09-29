@@ -21,12 +21,10 @@ module Peanuts #:nodoc:
       end
     end
 
-    def restore(reader)
-      self.class.restore(reader, self)
-    end
-
-    def save(writer)
-      self.class.save(self, writer)
+    def restore_from(source, options = {})
+      source = XML::Reader.new(source, options) unless source.is_a?(XML::Reader)
+      e = source.find_element
+      e && self.class.mapper.restore(self, source)
     end
 
     #    save_to(:string|:document[, options])      -> new_string|new_document
@@ -45,7 +43,9 @@ module Peanuts #:nodoc:
     #    cat.save_to(doc)
     #    puts doc.to_s
     def save_to(dest, options = {})
-      save(XML::Writer.new(dest, options))
+      dest = XML::Writer.new(dest, options) unless dest.is_a?(XML::Writer)
+      self.class.mapper.save(self, dest)
+      dest.result
     end
   end
   
@@ -81,9 +81,8 @@ module Peanuts #:nodoc:
     # Defines element name.
     # TODO: moar details
     #
-    # === Arguments
     # [+local_name+] Element name
-    # [+options+] <tt>:ns => <tt> Element namespace
+    # [+options+] <tt>:ns => 'uri'|:prefix</tt> Element namespace
     #
     # === Example:
     #    class Cat
@@ -97,12 +96,11 @@ module Peanuts #:nodoc:
       mapper.root
     end
 
-    #    element(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
-    #    element(name[, options]) { block } -> Mappings::Element
+    #    element(name[, type][, options])   -> mapping_object
+    #    element(name[, options]) { block }  -> mapping_object
     #
     # Defines single-element mapping.
     #
-    # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
     # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
@@ -112,7 +110,8 @@ module Peanuts #:nodoc:
     #    class Cat
     #      include Peanuts
     #      ...
-    #      element :name, :string, :whitespace => :collapse
+    #      element :name, :whitespace => :collapse
+    #      element :ears, :integer
     #      element :cheeseburger, Cheeseburger, :name => :cheezburger
     #      ...
     #    end
@@ -120,18 +119,37 @@ module Peanuts #:nodoc:
       add_mapping(:element, name, *args, &block)
     end
 
+    #    shallow_element(name, type[, options])     -> mapping_object
+    #    shallow_element(name[, options]) { block }  -> mapping_object
+    #
+    # Defines single-element shallow mapping.
+    #
+    # [+name+]    Accessor name
+    # [+type+]    Element type. Either this or _block_ is required.
+    # [+options+] <tt>:name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
+    # [+block+]   An anonymous class definition.
+    #
+    # === Example:
+    #    class Cat
+    #      include Peanuts
+    #      ...
+    #      shallow :friends do
+    #        element :friends, :name => :friend
+    #      end
+    #      shallow :cheeseburger, Cheeseburger, :name => :cheezburger
+    #      ...
+    #    end
     def shallow_element(name, *args, &block)
       add_mapping(:shallow_element, name, *args, &block)
     end
 
     alias shallow shallow_element
 
-    #    elements(name, [type[, options]])   -> Mappings::Element or Mappings::ElementValue
-    #    elements(name[, options]) { block } -> Mappings::Element
+    #    elements(name[, type][, options])   -> mapping_object
+    #    elements(name[, options]) { block }  -> mapping_object
     #
     # Defines multiple elements mapping.
     #
-    # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
     # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
@@ -149,11 +167,10 @@ module Peanuts #:nodoc:
       add_mapping(:elements, name, *args, &block)
     end
 
-    #    attribute(name, [type[, options]]) -> Mappings::Attribute or Mappings::AttributeValue
+    #    attribute(name[, type][, options]) -> mapping_object
     #
     # Defines attribute mapping.
     #
-    # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
     # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
@@ -175,33 +192,11 @@ module Peanuts #:nodoc:
       mapper.schema
     end
 
-    def restore(reader)
-      e = reader.find_element
-      e && _restore_new(e)
-    end
-
     def restore_from(source, options = {})
-      restore(XML::Reader.new(source, options))
-    end
-
-    def save(nut, writer)
-      _save(nut, writer)
-      writer.result
+      new.restore_from(source, options)
     end
 
     private
-    def _restore_new(reader)
-      _restore(new, reader)
-    end
-
-    def _restore(nut, reader)
-      mapper.restore(nut, reader)
-    end
-
-    def _save(nut, writer)
-      mapper.save(nut, writer)
-    end
-
     def add_mapping(node, name, *args, &block)
       type, options = *args
       type, options = (block ? Class.new : :string), type if type.nil? || type.is_a?(Hash)

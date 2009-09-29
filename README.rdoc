@@ -37,7 +37,24 @@ Please report via Github issue tracking.
     class Cheezburger
       include Peanuts
 
-      attribute :weight, :integer
+      attribute :weight, :float
+      attribute :price, :decimal
+
+      def initialize(weight = nil, price = nil)
+        @weight, @price = weight, price
+      end
+
+      def eql?(other)
+        other && weight == other.weight && price == other.price
+      end
+
+      alias == eql?
+    end
+
+    class Paws
+      include Peanuts
+
+      elements :paws, :name => :paw, :ns => 'urn:x-lol'
     end
 
     class Cat
@@ -45,17 +62,18 @@ Please report via Github issue tracking.
 
       namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-      root 'kitteh', :xmlns => :lol
+      root 'kitteh', :ns => 'urn:x-lol'
 
-      attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
+      attribute :has_tail?, :boolean, :name => 'has-tail', :ns => :kthnx
       attribute :ears, :integer
 
-      element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
-      element :name, :xmlns => 'urn:x-lol:kthnx'
-      elements :paws, :xmlname => :paw
+      element :ration, [:string], :name => :eats, :ns => :kthnx
+      element :name, :ns => 'urn:x-lol:kthnx'
 
-      element :friends, :xmlname => :pals do
-        elements :names, :xmlname => :pal
+      shallow :paws, Paws
+
+      shallow :pals, :ns => :kthnx do
+        elements :friends, :name => :pal
       end
 
       element :cheezburger, Cheezburger
@@ -74,19 +92,26 @@ Please report via Github issue tracking.
             tigers
             lions
           </kthnx:eats>
-          <pals>
+          <kthnx:pals>
             <pal>Chrissy</pal>
             <pal>Missy</pal>
             <pal>Sissy</pal>
-          </pals>
-          <paw>  one</paw>
-          <paw> two </paw>
-          <paw>three</paw>
-          <paw>four</paw>
-          <cheezburger weight='2' />
+          </kthnx:pals>
+          <paws>
+            <paw>  one</paw>
+            <paw> two </paw>
+            <paw>three</paw>
+            <paw>four</paw>
+          </paws>
+          <cheezburger price='2.05' weight='14.5547' />
+          <moar_cheezburgers>
+            <cheezburger price='19' weight='685.940' />
+            <cheezburger price='7.40' weight='9356.7' />
+          </moar_cheezburgers>
         </kitteh>
     EOS
     cat = Cat.restore_from(xml_fragment)
+    cheezburger = cat.cheezburger
 
     assert_equal 'Silly Tom', cat.name
     assert_equal %w(tigers lions), cat.ration
@@ -101,9 +126,9 @@ Please report via Github issue tracking.
 
 
 === See also
-* http://github.com/omg/quack      -- ... here is my handle, here is my spout
 * http://github.com/omg/statelogic -- A simple state machine for ActiveRecord
 * http://github.com/omg/threadpool -- Thread pool implementation
+* http://github.com/omg/quack      -- ...here is my handle, here is my spout
 
 
 Copyright (c) 2009 Igor Gunko, released under the MIT license

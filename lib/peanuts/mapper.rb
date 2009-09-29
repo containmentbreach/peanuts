@@ -45,6 +45,7 @@ module Peanuts
 
     def save(nut, writer)
       @root ? @root.save(writer) { _save(nut, writer) } : _save(nut, writer)
+      nil
     end
 
     def clear(nut)
@@ -56,7 +57,7 @@ module Peanuts
       each {|m| m.save(nut, writer) } if nut
     end
 
-    class Footprint
+    class Footprint #:nodoc:
       extend Forwardable
 
       def_delegators :@obj, :node_type, :local_name, :namespace_uri

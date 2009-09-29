@@ -14,7 +14,7 @@ module Peanuts
     end
   end
 
-  module Mappings
+  module Mappings # :nodoc:
     class Root < Mapping
       node_type :element
 
@@ -125,11 +125,11 @@ module Peanuts
     module ObjectMapping
       private
       def read_value(reader)
-        type.send(:_restore_new, reader)
+        type.mapper.restore(type.new, reader)
       end
 
       def write_value(writer, value)
-        type.send(:_save, value, writer)
+        type.mapper.save(value, writer)
       end
     end
 
@@ -175,11 +175,11 @@ module Peanuts
 
     class ShallowElement < Element
       def restore(nut, reader)
-        type.send(:_restore, nut, reader)
+        type.mapper.restore(nut, reader)
       end
 
       def save(nut, writer)
-        write(writer) {|w| type.send(:_save, nut, w) }
+        write(writer) {|w| type.mapper.save(nut, w) }
       end
 
       def clear(nut)
