@@ -6,18 +6,18 @@ module Peanuts
   module XML
     module LibXML
       class Writer < Peanuts::XML::Writer
-        def initialize(dest, dest_type, options = {})
-          @dest_type = dest_type
-          @dest = case dest_type
+        def initialize(dest, options = {})
+          @dest = case dest
           when :string
-            dest || ''
-          when :io
-            dest
+            ''
           when :document
-            dest || ::LibXML::XML::Document.new
+            ::LibXML::XML::Document.new
+          when Symbol, nil
+            raise ArgumentError, "unsupported destination #{dest.inspect}"
           else
-            raise ArgumentError, "unrecognized destination type #{dest_type.inspect}"
+            dest
           end
+          @options = options
         end
 
         def result
@@ -50,11 +50,11 @@ module Peanuts
           yield self
 
           if exparent.nil?
-            case @dest_type
-            when :string, :io
-              @dest << @parent.to_s
-            when :document
+            case @dest
+            when ::LibXML::XML::Document
               @dest.root = @parent
+            else
+              @dest << @parent.to_s
             end
           end
 
@@ -103,21 +103,19 @@ module Peanuts
           :libxml_options => ::LibXML::XML::Parser::Options::NOENT
         }
 
-        def initialize(source, source_type, options = {})
+        def initialize(source, options = {})
           super()
           options = options.dup
           @schema = options.delete(:schema)
-          @reader = case source_type
-          when :string
-            RD.string(source, parser_opt(options))
-          when :io
+          @reader = case source
+          when IO
             RD.io(source, parser_opt(options))
-          when :uri
-            RD.file(source, parser_opt(options))
-          when :document
+          when URI
+            RD.file(source.to_s, parser_opt(options))
+          when ::LibXML::XML::Document
             RD.document(source)
           else
-            raise ArgumentError, "unrecognized source type #{source_type}"
+            RD.string(source, parser_opt(options))
           end
           @reader.send("#{SCHEMAS[schema.type]}_validate", schema.schema) if @schema
         end

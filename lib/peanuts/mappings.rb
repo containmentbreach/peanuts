@@ -125,7 +125,7 @@ module Peanuts
     module ObjectMapping
       private
       def read_value(reader)
-        type.send(:_restore, reader)
+        type.send(:_restore_new, reader)
       end
 
       def write_value(writer, value)
@@ -175,11 +175,15 @@ module Peanuts
 
     class ShallowElement < Element
       def restore(nut, reader)
-        type.send(:_restore, reader, nut)
+        type.send(:_restore, nut, reader)
       end
 
       def save(nut, writer)
         write(writer) {|w| type.send(:_save, nut, w) }
+      end
+
+      def clear(nut)
+        type.mapper.clear(nut)
       end
 
       def define_accessors(type)

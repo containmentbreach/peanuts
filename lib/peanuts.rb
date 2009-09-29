@@ -25,28 +25,15 @@ module Peanuts #:nodoc:
       self.class.restore(reader, self)
     end
 
-    def restore_from(reader)
-      self.class.restore_from(reader, self)
-    end
-
     def save(writer)
       self.class.save(self, writer)
     end
 
-    #    build([options])              -> root element or string
-    #    build([options])              -> root element or string
-    #    build(destination[, options]) -> destination
+    #    save_to(:string|:document[, options])      -> new_string|new_document
+    #    save_to(string|iolike|document[, options]) -> string|iolike|document
     #
     # Defines attribute mapping.
     #
-    # === Arguments
-    # [+destination+]
-    #   Can be given a symbol a backend-specific object, an instance of String or IO classes.
-    #   [<tt>:string</tt>]   will return an XML string.
-    #   [<tt>:document</tt>] will return a backend specific document object.
-    #   [<tt>:object</tt>]   will return a backend specific object. New document will be created.
-    #   [an instance of +String+] the contents of the string will be replaced with the generated XML.
-    #   [an instance of +IO+]     the IO will be written to.
     # [+options+] Backend-specific options
     #
     # === Example:
@@ -57,10 +44,8 @@ module Peanuts #:nodoc:
     #    doc = LibXML::XML::Document.new
     #    cat.save_to(doc)
     #    puts doc.to_s
-    def save_to(*args)
-      self.class._source_or_dest(*args) do |dest_type, dest, options|
-        save(XML::Writer.new(dest, dest_type, options))
-      end
+    def save_to(dest, options = {})
+      save(XML::Writer.new(dest, options))
     end
   end
   
@@ -192,13 +177,11 @@ module Peanuts #:nodoc:
 
     def restore(reader)
       e = reader.find_element
-      e && _restore(e)
+      e && _restore_new(e)
     end
 
-    def restore_from(*args)
-      _source_or_dest(*args) do |source_type, source, options|
-        restore(XML::Reader.new(source, source_type, options))
-      end
+    def restore_from(source, options = {})
+      restore(XML::Reader.new(source, options))
     end
 
     def save(nut, writer)
@@ -206,17 +189,13 @@ module Peanuts #:nodoc:
       writer.result
     end
 
-    def _source_or_dest(*args)
-      options = args.last.is_a?(Hash) ? args.pop : {}
-      type, source = *args
-      type, source = :string, type unless type.is_a?(Symbol)
-      yield type, source, options
+    private
+    def _restore_new(reader)
+      _restore(new, reader)
     end
 
-    private
-    def _restore(reader, nut = new)
+    def _restore(nut, reader)
       mapper.restore(nut, reader)
-      nut
     end
 
     def _save(nut, writer)
