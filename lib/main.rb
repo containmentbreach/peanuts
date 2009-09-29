@@ -3,8 +3,8 @@ require 'peanuts'
 require 'peanuts/xml/libxml'
 
 xml_fragment = <<-EOS
-        <kitteh xmlns='urn:x-lol' xmlns:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
-          <name xmlns='urn:x-lol:kthnx'>
+        <kitteh namespace_uri='urn:x-lol' namespace_uri:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
+          <name namespace_uri='urn:x-lol:kthnx'>
               Silly
               Tom
           </name>
@@ -44,14 +44,14 @@ class Cat
 
   namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-  root 'kitteh', :xmlns => 'urn:x-lol'
+  root 'kitteh', :ns => 'urn:x-lol'
 
-  attribute :has_tail, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
-  element :name, :string, :xmlns => :kthnx#'urn:x-lol:kthnx'
-  element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
+  attribute :has_tail, :boolean, :name => 'has-tail', :ns => :kthnx
+  element :name, :string, :ns => :kthnx#'urn:x-lol:kthnx'
+  element :ration, [:string], :name => :eats, :ns => :kthnx
 
   shallow :pals do
-    elements :friends, :xmlname => :pal
+    elements :friends, :name => :pal
   end
 
   element :cheezburger, Cheezburger
@@ -61,8 +61,6 @@ class Cat
 end
 
 cat = Cat.restore_from(xml_fragment)
-
-puts cat.respond_to?(:weight)
 
 puts cat.inspect
 

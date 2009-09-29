@@ -90,25 +90,25 @@ module Peanuts #:nodoc:
       map ? mapper.namespaces.update(map) : mapper.namespaces
     end
 
-    #    root(xmlname[, :xmlns => ...]) -> Mappings::Root
+    #    root(local_name[, :ns => ...]) -> Mappings::Root
     #    root                           -> Mappings::Root
     #
     # Defines element name.
     # TODO: moar details
     #
     # === Arguments
-    # [+xmlname+] Element name
-    # [+options+] <tt>:xmlns => <tt> Element namespace
+    # [+local_name+] Element name
+    # [+options+] <tt>:ns => <tt> Element namespace
     #
     # === Example:
     #    class Cat
     #      include Peanuts
     #      ...
-    #      root :kitteh, :xmlns => 'urn:lol'
+    #      root :kitteh, :ns => 'urn:lol'
     #      ...
     #    end
-    def root(xmlname = nil, options = {})
-      mapper.root = Root.new(xmlname, prepare_options(:root, options)) if xmlname
+    def root(local_name = nil, options = {})
+      mapper.root = Root.new(local_name, prepare_options(:root, options)) if local_name
       mapper.root
     end
 
@@ -120,7 +120,7 @@ module Peanuts #:nodoc:
     # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
-    # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
+    # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
     # [+block+]   An anonymous class definition.
     #
     # === Example:
@@ -128,7 +128,7 @@ module Peanuts #:nodoc:
     #      include Peanuts
     #      ...
     #      element :name, :string, :whitespace => :collapse
-    #      element :cheeseburger, Cheeseburger, :xmlname => :cheezburger
+    #      element :cheeseburger, Cheeseburger, :name => :cheezburger
     #      ...
     #    end
     def element(name, *args, &block)
@@ -149,7 +149,7 @@ module Peanuts #:nodoc:
     # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
-    # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
+    # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
     # [+block+]   An anonymous class definition.
     #
     # === Example:
@@ -157,7 +157,7 @@ module Peanuts #:nodoc:
     #      include Peanuts
     #      ...
     #      elements :ration, :string, :whitespace => :collapse
-    #      elements :cheeseburgers, Cheeseburger, :xmlname => :cheezburger
+    #      elements :cheeseburgers, Cheeseburger, :name => :cheezburger
     #      ...
     #    end
     def elements(name, *args, &block)
@@ -171,14 +171,14 @@ module Peanuts #:nodoc:
     # === Arguments
     # [+name+]    Accessor name
     # [+type+]    Element type. <tt>:string</tt> assumed if omitted (see +Converter+).
-    # [+options+] <tt>:xmlname</tt>, <tt>:xmlns</tt>, converter options (see +Converter+).
+    # [+options+] <tt>name</tt>, <tt>:ns</tt>, converter options (see +Converter+).
     #
     # === Example:
     #    class Cat
     #      include Peanuts
     #      ...
     #      element :name, :string, :whitespace => :collapse
-    #      element :cheeseburger, Cheeseburger, :xmlname => :cheezburger
+    #      element :cheeseburger, Cheeseburger, :name => :cheezburger
     #      ...
     #    end
     def attribute(name, *args)
@@ -241,34 +241,35 @@ module Peanuts #:nodoc:
         ShallowElement
       end.new(name, type, options)
 
+      default_ns = m.prefix ? mapper.default_ns : m.namespace_uri
       if shallow
         if type.is_a?(MappableType)
-          type.mapper.each {|m| m.define_accessor(self) }
+          type.mapper.each {|m| m.define_accessors(self) }
         else
           raise ArgumentError, 'block is required' unless block
-          ShallowObject.init(type, self, mapper.namespaces, m.xmlns, &block)
+          ShallowObject.init(type, self, mapper.namespaces, default_ns, &block)
         end
       else
         if type.is_a?(Class) && !type.is_a?(MappableType)
           raise ArgumentError, 'block is required' unless block
-          MappableObject.init(type, mapper.namespaces, m.xmlns, &block)
+          MappableObject.init(type, mapper.namespaces, default_ns, &block)
         end
-        define_accessor(m)
+        define_accessors(m)
       end
       m
     end
 
     def prepare_options(node, options)
-      ns = options.fetch(:xmlns) {|k| node == :attribute ? nil : options[k] = root && root.xmlns || mapper.default_ns }
+      ns = options.fetch(:ns) {|k| node == :attribute ? nil : options[k] = mapper.default_ns }
       if ns.is_a?(Symbol)
-        raise ArgumentError, "undefined prefix: #{ns}" unless options[:xmlns] = mapper.namespaces[ns]
+        raise ArgumentError, "undefined prefix: #{ns}" unless options[:ns] = mapper.namespaces[ns]
         options[:prefix] = ns
       end
       options
     end
 
-    def define_accessor(mapping)
-      mapping.define_accessor(self)
+    def define_accessors(mapping)
+      mapping.define_accessors(self)
     end
   end
 
@@ -287,8 +288,8 @@ module Peanuts #:nodoc:
   end
 
   module ShallowType #:nodoc:
-    def define_accessor(mapping)
-      mapping.define_accessor(@owner)
+    def define_accessors(mapping)
+      mapping.define_accessors(@owner)
     end
   end
 end

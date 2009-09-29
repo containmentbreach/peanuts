@@ -27,7 +27,7 @@ end
 class Paws
   include Peanuts
 
-  elements :paws, :xmlname => :paw, :xmlns => 'urn:x-lol'
+  elements :paws, :name => :paw, :ns => 'urn:x-lol'
 end
 
 class Cat
@@ -35,18 +35,18 @@ class Cat
 
   namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-  root 'kitteh', :xmlns => :lol
+  root 'kitteh', :ns => 'urn:x-lol'
 
-  attribute :has_tail?, :boolean, :xmlname => 'has-tail', :xmlns => :kthnx
+  attribute :has_tail?, :boolean, :name => 'has-tail', :ns => :kthnx
   attribute :ears, :integer
 
-  element :ration, [:string], :xmlname => :eats, :xmlns => :kthnx
-  element :name, :xmlns => 'urn:x-lol:kthnx'
+  element :ration, [:string], :name => :eats, :ns => :kthnx
+  element :name, :ns => 'urn:x-lol:kthnx'
   
   shallow :paws, Paws
 
-  shallow :pals do
-    elements :friends, :xmlname => :pal
+  shallow :pals, :ns => :kthnx do
+    elements :friends, :name => :pal
   end
 
   element :cheezburger, Cheezburger
@@ -113,11 +113,11 @@ shared_examples_for 'sample kitteh' do
             tigers
             lions
           </kthnx:eats>
-          <pals>
+          <kthnx:pals>
             <pal>Chrissy</pal>
             <pal>Missy</pal>
             <pal>Sissy</pal>
-          </pals>
+          </kthnx:pals>
           <paws>
             <paw>  one</paw>
             <paw> two </paw>

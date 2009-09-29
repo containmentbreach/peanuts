@@ -3,10 +3,10 @@ require 'peanuts/converters'
 
 module Peanuts
   class Mapping
-    attr_reader :xmlname, :xmlns, :prefix, :options
+    attr_reader :local_name, :namespace_uri, :prefix, :options
 
-    def initialize(xmlname, options)
-      @xmlname, @xmlns, @prefix, @options = xmlname.to_s, options.delete(:xmlns), options.delete(:prefix), options
+    def initialize(local_name, options)
+      @local_name, @namespace_uri, @prefix, @options = local_name.to_s, options.delete(:ns), options.delete(:prefix), options
     end
 
     def self.node_type(node_type)
@@ -19,7 +19,7 @@ module Peanuts
       node_type :element
 
       def save(writer, &block)
-        writer.write(node_type, xmlname, xmlns, prefix, &block)
+        writer.write(node_type, local_name, namespace_uri, prefix, &block)
       end
     end
 
@@ -29,7 +29,7 @@ module Peanuts
       def initialize(name, type, options)
         @bare_name = name.to_s.sub(/\?\z/, '')
 
-        super(options.delete(:xmlname) || @bare_name, options)
+        super(options.delete(:name) || @bare_name, options)
 
         @converter = case type
         when Symbol
@@ -46,7 +46,7 @@ module Peanuts
         @name, @setter, @type = name.to_sym, :"#{@bare_name}=", type
       end
 
-      def define_accessor(type)
+      def define_accessors(type)
         raise ArgumentError, "#{name}: method already defined or reserved" if type.method_defined?(name)
         raise ArgumentError, "#{@setter}: method already defined or reserved" if type.method_defined?(@setter)
 
@@ -86,7 +86,7 @@ module Peanuts
       end
 
       def write(writer, &block)
-        writer.write(node_type, xmlname, xmlns, prefix, &block)
+        writer.write(node_type, local_name, namespace_uri, prefix, &block)
       end
     end
 
@@ -133,20 +133,6 @@ module Peanuts
       end
     end
 
-    module ShallowMapping
-      def restore(nut, reader)
-        type.send(:_restore, reader, nut)
-      end
-
-      def save(nut, writer)
-        write(writer) {|w| type.send(:_save, nut, w) }
-      end
-
-      def define_accessor(type)
-        type.mapper.each {|m| m.define_accessor(type) }
-      end
-    end
-
     class ElementValue < MemberMapping
       include SingleMapping
       include ValueMapping
@@ -169,7 +155,7 @@ module Peanuts
 
       def initialize(name, type, options)
         super
-        raise ArgumentError, 'a namespaced attribute must have namespace prefix' if xmlns && !prefix
+        raise ArgumentError, 'a namespaced attribute must have namespace prefix' if namespace_uri && !prefix
       end
     end
 
@@ -188,7 +174,17 @@ module Peanuts
     end
 
     class ShallowElement < Element
-      include ShallowMapping
+      def restore(nut, reader)
+        type.send(:_restore, reader, nut)
+      end
+
+      def save(nut, writer)
+        write(writer) {|w| type.send(:_save, nut, w) }
+      end
+
+      def define_accessors(type)
+        type.mapper.define_accessors(type)
+      end
     end
   end
 end
