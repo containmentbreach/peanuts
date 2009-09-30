@@ -126,9 +126,7 @@ Please report via Github issue tracking.
 
 
 === See also
-* http://github.com/omg/statelogic -- A simple state machine for ActiveRecord
-* http://github.com/omg/threadpool -- Thread pool implementation
-* http://github.com/omg/quack      -- ...here is my handle, here is my spout
-
+* http://github.com/omg/unrest     -- REST-client
+* http://github.com/omg/statelogic -- Simple state machine for ActiveRecord
 
 Copyright (c) 2009 Igor Gunko, released under the MIT license

@@ -18,7 +18,7 @@ Rake::RDocTask.new do |rdoc|
   rdoc.main = "README.rdoc" # page to start on
   rdoc.title = "Peanuts Documentation"
   rdoc.rdoc_dir = 'doc/rdoc' # rdoc output folder
-  rdoc.options << '--line-numbers' << '--inline-source'
+  rdoc.options << '--line-numbers'
 end
 
 desc 'Run specs'

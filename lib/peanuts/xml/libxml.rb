@@ -13,7 +13,7 @@ module Peanuts
       end
 
       class Writer < Peanuts::XML::Writer
-        DEFAULT_OPTIONS = {:libxml_indent => true, :libxml_encoding => 'UTF-8'}
+        DEFAULT_OPTIONS = {}
 
         def initialize(dest, options = {})
           @dest = case dest
@@ -107,10 +107,7 @@ module Peanuts
           :xml_declaration
         ].freeze
 
-        DEFAULT_OPTIONS = {
-          :libxml_encoding => ::LibXML::XML::Encoding::UTF_8,
-          :libxml_options => ::LibXML::XML::Parser::Options::NOENT
-        }
+        DEFAULT_OPTIONS = {}
 
         def initialize(source, options = {})
           super()
