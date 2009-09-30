@@ -131,7 +131,7 @@ shared_examples_for 'sample kitteh' do
           </moar_cheezburgers>
         </kitteh>
     EOS
-    @cat = Cat.restore_from(@xml_fragment)
+    @cat = Cat.from_xml(@xml_fragment)
     @cheezburger = @cat.cheezburger
   end
 
@@ -146,6 +146,6 @@ describe 'My cat saved and restored' do
   it_should_behave_like 'sample kitteh'
 
   before :all do
-    @cat = Cat.restore_from(@cat.save_to(:string))
+    @cat = Cat.from_xml(@cat.to_xml)
   end
 end

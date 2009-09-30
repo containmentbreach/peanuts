@@ -21,7 +21,7 @@ module Peanuts #:nodoc:
       end
     end
 
-    def restore_from(source, options = {})
+    def from_xml(source, options = {})
       source = XML::Reader.new(source, options) unless source.is_a?(XML::Reader)
       e = source.find_element
       e && self.class.mapper.restore(self, source)
@@ -42,7 +42,7 @@ module Peanuts #:nodoc:
     #    doc = LibXML::XML::Document.new
     #    cat.save_to(doc)
     #    puts doc.to_s
-    def save_to(dest, options = {})
+    def to_xml(dest = :string, options = {})
       dest = XML::Writer.new(dest, options) unless dest.is_a?(XML::Writer)
       self.class.mapper.save(self, dest)
       dest.result
@@ -192,8 +192,8 @@ module Peanuts #:nodoc:
       mapper.schema
     end
 
-    def restore_from(source, options = {})
-      new.restore_from(source, options)
+    def from_xml(source, options = {})
+      new.from_xml(source, options)
     end
 
     private

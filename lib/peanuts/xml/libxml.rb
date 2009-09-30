@@ -1,5 +1,6 @@
 require 'libxml'
 require 'forwardable'
+require 'uri'
 require 'peanuts/xml'
 
 module Peanuts
