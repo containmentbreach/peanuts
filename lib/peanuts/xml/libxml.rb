@@ -1,12 +1,20 @@
 require 'libxml'
 require 'forwardable'
 require 'uri'
+require 'stringio'
 require 'peanuts/xml'
 
 module Peanuts
   module XML
     module LibXML
+      def self.libxml_opt(options, default = {})
+        h = default.merge(options)
+        h.update(h.from_namespace!(:libxml))
+      end
+
       class Writer < Peanuts::XML::Writer
+        DEFAULT_OPTIONS = {:libxml_indent => true, :libxml_encoding => 'UTF-8'}
+
         def initialize(dest, options = {})
           @dest = case dest
           when :string
@@ -18,7 +26,7 @@ module Peanuts
           else
             dest
           end
-          @options = options
+          @options = options = LibXML.libxml_opt(options, DEFAULT_OPTIONS)
         end
 
         def result
@@ -55,7 +63,7 @@ module Peanuts
             when ::LibXML::XML::Document
               @dest.root = @parent
             else
-              @dest << @parent.to_s
+              @dest << @parent.to_s(@options)
             end
           end
 
@@ -99,7 +107,7 @@ module Peanuts
           :xml_declaration
         ].freeze
 
-        DEFAULT_PARSER_OPTIONS = {
+        DEFAULT_OPTIONS = {
           :libxml_encoding => ::LibXML::XML::Encoding::UTF_8,
           :libxml_options => ::LibXML::XML::Parser::Options::NOENT
         }
@@ -108,15 +116,16 @@ module Peanuts
           super()
           options = options.dup
           @schema = options.delete(:schema)
+          options = LibXML.libxml_opt(options, DEFAULT_OPTIONS)
           @reader = case source
-          when IO
-            RD.io(source, parser_opt(options))
+          when IO, StringIO
+            RD.io(source, options)
           when URI
-            RD.file(source.to_s, parser_opt(options))
+            RD.file(source.to_s, options)
           when ::LibXML::XML::Document
             RD.document(source)
           else
-            RD.string(source, parser_opt(options))
+            RD.string(source.to_s, options)
           end
           @reader.send("#{SCHEMAS[schema.type]}_validate", schema.schema) if @schema
         end
@@ -158,11 +167,6 @@ module Peanuts
         end
 
         private
-        def parser_opt(options)
-          h = DEFAULT_PARSER_OPTIONS.merge(options)
-          h.merge(h.from_namespace!(:libxml))
-        end
-
         def read
           case @reader.node_type
           when RD::TYPE_ATTRIBUTE
