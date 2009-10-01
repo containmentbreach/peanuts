@@ -18,7 +18,7 @@ module Peanuts
     class Root < Mapping
       node_type :element
 
-      def save(writer, &block)
+      def write(writer, &block)
         writer.write(node_type, local_name, namespace_uri, prefix, &block)
       end
     end
@@ -54,18 +54,23 @@ module Peanuts
         raise ArgumentError, "#{name}: method already defined or reserved" if type.method_defined?(name)
         raise ArgumentError, "#{@setter}: method already defined or reserved" if type.method_defined?(@setter)
 
-        type.class_eval <<-DEF
-          def #{name}; @#{@bare_name}; end
-          def #{@setter}(value); @#{@bare_name} = value; end
-        DEF
+        ivar = :"@#{@bare_name}"
+        raise ArgumentError, "#{ivar}: instance variable already defined" if type.instance_variable_defined?(ivar)
+
+        type.send(:define_method, name) do
+          instance_variable_get(ivar)
+        end
+        type.send(:define_method, @setter) do |value|
+          instance_variable_set(ivar, value)
+        end
       end
 
-      def save(nut, writer)
-        save_value(writer, get(nut))
+      def read(nut, reader)
+        set(nut, read_it(reader, get(nut)))
       end
 
-      def restore(nut, reader)
-        set(nut, restore_value(reader, get(nut)))
+      def write(nut, writer)
+        write_it(writer, get(nut))
       end
 
       def clear(nut)
@@ -89,29 +94,29 @@ module Peanuts
         @converter ? @converter.from_xml(text) : text
       end
 
-      def write(writer, &block)
+      def write_node(writer, &block)
         writer.write(node_type, local_name, namespace_uri, prefix, &block)
       end
     end
 
     module SingleMapping
       private
-      def restore_value(reader, acc)
+      def read_it(reader, acc)
         read_value(reader)
       end
 
-      def save_value(writer, value)
-        write(writer) {|w| write_value(w, value) }
+      def write_it(writer, value)
+        write_node(writer) {|w| write_value(w, value) }
       end
     end
 
     module MultiMapping
-      def restore_value(reader, acc)
+      def read_it(reader, acc)
         (acc || []) << read_value(reader)
       end
 
-      def save_value(writer, values)
-        values.each {|value| write(writer) {|w| write_value(w, value) } } if values
+      def write_it(writer, values)
+        values.each {|value| write_node(writer) {|w| write_value(w, value) } } if values
       end
     end
 
@@ -122,18 +127,18 @@ module Peanuts
       end
 
       def write_value(writer, value)
-        writer.value = to_xml(value)
+        writer.write_value(to_xml(value))
       end
     end
 
     module ObjectMapping
       private
       def read_value(reader)
-        type.mapper.restore(type.new, reader)
+        type.mapper.read(type.new, reader)
       end
 
       def write_value(writer, value)
-        type.mapper.save(value, writer)
+        type.mapper.write_children(value, writer)
       end
     end
 
@@ -178,12 +183,12 @@ module Peanuts
     end
 
     class ShallowElement < Element
-      def restore(nut, reader)
-        type.mapper.restore(nut, reader)
+      def read(nut, reader)
+        type.mapper.read(nut, reader)
       end
 
-      def save(nut, writer)
-        write(writer) {|w| type.mapper.save(nut, w) }
+      def write(nut, writer)
+        write_node(writer) {|w| type.mapper.write_children(nut, w) }
       end
 
       def clear(nut)

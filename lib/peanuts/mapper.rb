@@ -34,17 +34,25 @@ module Peanuts
       each {|m| m.define_accessors(type) }
     end
 
-    def restore(nut, reader)
+    def read(nut, reader)
       rdfp = Footprint.new(reader)
       reader.each do
         m = @footprints[rdfp]
-        m.restore(nut, reader) if m
+        m.read(nut, reader) if m
       end
       nut
     end
 
-    def save(nut, writer)
-      @root ? @root.save(writer) { _save(nut, writer) } : _save(nut, writer)
+    def write(nut, writer)
+      @root.write(writer) do |w|
+        w.write_namespaces(namespaces)
+        write_children(nut, w)
+      end
+      nil
+    end
+
+    def write_children(nut, writer)
+      each {|m| m.write(nut, writer) } if nut
       nil
     end
 
@@ -53,10 +61,6 @@ module Peanuts
     end
 
     private
-    def _save(nut, writer)
-      each {|m| m.save(nut, writer) } if nut
-    end
-
     class Footprint #:nodoc:
       extend Forwardable
 

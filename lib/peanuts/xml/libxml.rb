@@ -34,12 +34,18 @@ module Peanuts
           @dest
         end
 
-        def value=(value)
+        def write_value(value)
           case @node
           when ::LibXML::XML::Attr
             @node.value = value || ''
           else
             @node.content = value || ''
+          end
+        end
+
+        def write_namespaces(namespaces)
+          for prefix, uri in namespaces
+            mkns(@node, uri, prefix)
           end
         end
 

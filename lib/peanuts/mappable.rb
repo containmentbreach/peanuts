@@ -12,7 +12,7 @@ module Peanuts #:nodoc:
     def from_xml(source, options = {})
       source = XML::Reader.new(source, options) unless source.is_a?(XML::Reader)
       e = source.find_element
-      e && self.class.mapper.restore(self, source)
+      e && self.class.mapper.read(self, source)
     end
 
     #    save_to(:string|:document[, options])      -> new_string|new_document
@@ -32,7 +32,7 @@ module Peanuts #:nodoc:
     #    puts doc.to_s
     def to_xml(dest = :string, options = {})
       dest = XML::Writer.new(dest, options) unless dest.is_a?(XML::Writer)
-      self.class.mapper.save(self, dest)
+      self.class.mapper.write(self, dest)
       dest.result
     end
   end
