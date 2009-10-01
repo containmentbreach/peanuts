@@ -21,12 +21,13 @@ module Peanuts
             ''
           when :document
             ::LibXML::XML::Document.new
-          when Symbol, nil
-            raise ArgumentError, "unsupported destination #{dest.inspect}"
+          when ::LibXML::XML::Document
+            dest
           else
+            raise ArgumentError, "unsupported destination #{dest.inspect}" unless dest.respond_to?(:<<)
             dest
           end
-          @options = options = LibXML.libxml_opt(options, DEFAULT_OPTIONS)
+          @options = LibXML.libxml_opt(options, DEFAULT_OPTIONS)
         end
 
         def result
@@ -115,14 +116,15 @@ module Peanuts
           @schema = options.delete(:schema)
           options = LibXML.libxml_opt(options, DEFAULT_OPTIONS)
           @reader = case source
-          when IO, StringIO
-            RD.io(source, options)
+          when String
+            RD.string(source.to_s, options)
           when URI
             RD.file(source.to_s, options)
           when ::LibXML::XML::Document
             RD.document(source)
           else
-            RD.string(source.to_s, options)
+            raise "unsupported source #{source.inspect}" unless source.respond_to?(:read)
+            RD.io(source, options)
           end
           @reader.send("#{SCHEMAS[schema.type]}_validate", schema.schema) if @schema
         end

@@ -6,15 +6,7 @@ module Peanuts #:nodoc:
   # See also +MappableType+
   module MappableObject
     def self.included(other) #:nodoc:
-      init(other)
-    end
-
-    def self.init(cls, ns_context = nil, default_ns = nil, &block) #:nodoc:
-      cls.instance_eval do
-        extend MappableType
-        @mapper = Mapper.new(ns_context, default_ns)
-        instance_eval(&block) if block_given?
-      end
+      MappableType.init(other)
     end
 
     def from_xml(source, options = {})
@@ -48,6 +40,15 @@ module Peanuts #:nodoc:
   # See also +MappableObject+.
   module MappableType
     include Mappings
+
+    def self.init(cls, ns_context = nil, default_ns = nil, &block) #:nodoc:
+      cls.instance_eval do
+        extend MappableType
+        @mapper = Mapper.new(ns_context, default_ns)
+        instance_eval(&block) if block_given?
+      end
+      cls
+    end
 
     #    mapper -> Mapper
     #
@@ -201,31 +202,23 @@ module Peanuts #:nodoc:
 
       mapper << m = case node
       when :element
-        (shallow = options.delete(:shallow)) ? ShallowElement : (type.is_a?(Class) ? Element : ElementValue)
+        options.delete(:shallow) ? ShallowElement : (type.is_a?(Class) ? Element : ElementValue)
       when :elements
         type.is_a?(Class) ? Elements : ElementValues
       when :attribute
         Attribute
       when :shallow_element
-        node, shallow = :element, true
         ShallowElement
       end.new(name, type, options)
 
+      raise ArgumentError, 'bad type for shallow element' if m.is_a?(ShallowElement) && !type.is_a?(Class)
+
       default_ns = m.prefix ? mapper.default_ns : m.namespace_uri
-      if shallow
-        if type.is_a?(MappableType)
-          type.mapper.each {|m| m.define_accessors(self) }
-        else
-          raise ArgumentError, 'block is required' unless block
-          ShallowObject.init(type, self, mapper.namespaces, default_ns, &block)
-        end
-      else
-        if type.is_a?(Class) && !type.is_a?(MappableType)
-          raise ArgumentError, 'block is required' unless block
-          MappableObject.init(type, mapper.namespaces, default_ns, &block)
-        end
-        define_accessors(m)
+      if type.is_a?(Class) && !type.is_a?(MappableType)
+        raise ArgumentError, 'block is required' unless block
+        MappableType.init(type, mapper.namespaces, default_ns, &block)
       end
+      m.define_accessors(self)
       m
     end
 
@@ -236,30 +229,6 @@ module Peanuts #:nodoc:
         options[:prefix] = ns
       end
       options
-    end
-
-    def define_accessors(mapping)
-      mapping.define_accessors(self)
-    end
-  end
-
-  module ShallowObject #:nodoc:
-    def self.included(other)
-      init(other)
-    end
-
-    def self.init(cls, owner, ns_context = nil, default_ns = nil, &block)
-      MappableObject.init(cls, ns_context, default_ns) do
-        @owner = owner
-        extend ShallowType
-        instance_eval(&block) if block_given?
-      end
-    end
-  end
-
-  module ShallowType #:nodoc:
-    def define_accessors(mapping)
-      mapping.define_accessors(@owner)
     end
   end
 end

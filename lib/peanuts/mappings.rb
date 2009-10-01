@@ -187,7 +187,7 @@ module Peanuts
       end
 
       def define_accessors(type)
-        type.mapper.define_accessors(type)
+        self.type.mapper.define_accessors(type)
       end
     end
   end

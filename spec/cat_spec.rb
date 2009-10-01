@@ -140,12 +140,12 @@ end
 
 describe 'My cat' do
   it_should_behave_like 'sample kitteh'
-end
 
-describe 'My cat saved and restored' do
-  it_should_behave_like 'sample kitteh'
+  context 'saved and restored' do
+    it_should_behave_like 'sample kitteh'
 
-  before :all do
-    @cat = Cat.from_xml(@cat.to_xml)
+    before :all do
+      @cat = Cat.from_xml(@cat.to_xml)
+    end
   end
 end
