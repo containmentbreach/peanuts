@@ -17,6 +17,7 @@ gemspec = Gem::Specification.new do |s|
     README.rdoc MIT-LICENSE Rakefile
     lib/peanuts.rb
     lib/omg-peanuts.rb
+    lib/peanuts/mappable.rb
     lib/peanuts/mappings.rb
     lib/peanuts/converters.rb
     lib/peanuts/mapper.rb
