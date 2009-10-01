@@ -31,11 +31,15 @@ module Peanuts
 
         super(options.delete(:name) || @bare_name, options)
 
+        @type = type
         @converter = case type
         when Symbol
           Converter.create!(type, options)
         when Class
-          type < Converter && Converter.create!(type, options)
+          if type < Converter
+            @type = nil
+            Converter.create!(type, options)
+          end
         when Array
           raise ArgumentError, "invalid value for type: #{type.inspect}" if type.length != 1
           options[:item_type] = type.first
@@ -43,7 +47,7 @@ module Peanuts
         else
           raise ArgumentError, "invalid value for type: #{type.inspect}"
         end
-        @name, @setter, @type = name.to_sym, :"#{@bare_name}=", type
+        @name, @setter = name.to_sym, :"#{@bare_name}="
       end
 
       def define_accessors(type)

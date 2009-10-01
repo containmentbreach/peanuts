@@ -194,27 +194,32 @@ module Peanuts #:nodoc:
     end
 
     private
+    def object_type?(type)
+      type.is_a?(Class) && !(type < Converter)
+    end
+
     def add_mapping(node, name, *args, &block)
       type, options = *args
       type, options = (block ? Class.new : :string), type if type.nil? || type.is_a?(Hash)
 
+      object_type = object_type?(type)
       options = prepare_options(node, options || {})
 
       mapper << m = case node
       when :element
-        options.delete(:shallow) ? ShallowElement : (type.is_a?(Class) ? Element : ElementValue)
+        options.delete(:shallow) ? ShallowElement : (object_type ? Element : ElementValue)
       when :elements
-        type.is_a?(Class) ? Elements : ElementValues
+        object_type ? Elements : ElementValues
       when :attribute
         Attribute
       when :shallow_element
         ShallowElement
       end.new(name, type, options)
 
-      raise ArgumentError, 'bad type for shallow element' if m.is_a?(ShallowElement) && !type.is_a?(Class)
+      raise ArgumentError, 'bad type for shallow element' if !object_type && m.is_a?(ShallowElement)
 
       default_ns = m.prefix ? mapper.default_ns : m.namespace_uri
-      if type.is_a?(Class) && !type.is_a?(MappableType)
+      if object_type && !type.is_a?(MappableType)
         raise ArgumentError, 'block is required' unless block
         MappableType.init(type, mapper.namespaces, default_ns, &block)
       end

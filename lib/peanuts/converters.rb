@@ -16,15 +16,10 @@ module Peanuts
     end
 
     def self.lookup!(type)
-      case type
-      when Symbol
-        begin
-          const_get("Convert_#{type}")
-        rescue NameError
-          raise ArgumentError, "converter not found for #{type}"
-        end
-      else
-        type
+      begin
+        const_get("Convert_#{type}")
+      rescue NameError
+        raise ArgumentError, "converter not found for #{type}"
       end
     end
 
@@ -35,7 +30,12 @@ module Peanuts
     end
 
     def self.create!(type, options)
-      lookup!(type).new(options)
+      case type
+      when Symbol
+        lookup!(type)
+      else
+        type
+      end.new(options)
     end
 
     # Who could have thought... a string.
