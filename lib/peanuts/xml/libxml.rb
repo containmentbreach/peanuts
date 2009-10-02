@@ -54,7 +54,13 @@ module Peanuts
           when :element
             @node = ::LibXML::XML::Node.new(local_name)
             @parent << @node if @parent
-            @node.namespaces.namespace = mkns(@node, namespace_uri, prefix) if namespace_uri
+            if namespace_uri || prefix
+              unless namespace_uri
+                defns = @node.namespaces.default
+                namespace_uri = defns ? defns.href : ''
+              end
+              @node.namespaces.namespace = mkns(@node, namespace_uri, prefix)
+            end
           when :attribute
             @node = ::LibXML::XML::Attr.new(@parent, local_name, '', namespace_uri && mkns(@parent, namespace_uri, prefix))
           else
@@ -79,10 +85,9 @@ module Peanuts
 
         private
         def mkns(node, namespace_uri, prefix)
-          prefix = prefix && prefix.to_s
-          ns = node && node.namespaces.find_by_href(namespace_uri)
-          ns = ::LibXML::XML::Namespace.new(node, prefix, namespace_uri) unless ns && ns.prefix == prefix
-          ns
+          prefix = nil if prefix && (prefix = prefix.to_s).empty?
+          newns = proc { ::LibXML::XML::Namespace.new(node, prefix, namespace_uri) }
+          node.namespaces.find(newns) {|ns| ns.prefix == prefix && ns.href == namespace_uri }
         end
       end
 

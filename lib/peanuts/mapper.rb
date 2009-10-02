@@ -4,8 +4,8 @@ module Peanuts
   class Mapper
     include Enumerable
 
-    attr_reader :root, :namespaces, :ns_context, :default_ns
-    attr_accessor :schema
+    attr_reader :root, :namespaces, :ns_context
+    attr_accessor :default_ns, :schema
 
     def initialize(ns_context = nil, default_ns = nil)
       @ns_context, @default_ns = ns_context, default_ns
@@ -45,6 +45,7 @@ module Peanuts
 
     def write(nut, writer)
       @root.write(writer) do |w|
+        w.write_namespaces('' => default_ns) if default_ns
         w.write_namespaces(namespaces)
         write_children(nut, w)
       end

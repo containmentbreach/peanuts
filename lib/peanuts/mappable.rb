@@ -68,8 +68,22 @@ module Peanuts #:nodoc:
     #      namespaces :lol => 'urn:lol', ...
     #      ...
     #    end
-    def namespaces(map = nil)
-      map ? mapper.namespaces.update(map) : mapper.namespaces
+    def namespaces(*args)
+      case args.size
+      when 0
+        mapper.namespaces
+      when 1
+        if args.first.is_a?(Hash)
+          mapper.namespaces.update(args.first)
+        else
+          mapper.default_ns = args.first
+        end
+      when 2
+        mapper.default_ns = args.first
+        mapper.namespaces.update(args[1])
+      else
+        raise ArgumentError, 'bad arguments'
+      end
     end
 
     #    root(local_name[, :ns => ...]) -> Mappings::Root
@@ -231,7 +245,7 @@ module Peanuts #:nodoc:
       ns = options.fetch(:ns) {|k| node == :attribute ? nil : options[k] = mapper.default_ns }
       if ns.is_a?(Symbol)
         raise ArgumentError, "undefined prefix: #{ns}" unless options[:ns] = mapper.namespaces[ns]
-        options[:prefix] = ns
+        options[:prefix] = ns unless options.include?(:prefix)
       end
       options
     end
