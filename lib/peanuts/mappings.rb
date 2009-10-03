@@ -9,6 +9,12 @@ module Peanuts
       @local_name, @namespace_uri, @prefix, @options = local_name.to_s, options.delete(:ns), options.delete(:prefix), options
     end
 
+    def matches?(reader)
+      node_type == reader.node_type &&
+        local_name == reader.local_name &&
+        namespace_uri == reader.namespace_uri
+    end
+
     def self.node_type(node_type)
       define_method(:node_type) { node_type }
     end

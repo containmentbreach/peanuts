@@ -25,7 +25,7 @@ module Peanuts
     end
 
     def <<(mapping)
-      fp = Footprint.new(mapping)
+      fp = MappingFootprint.new(mapping)
       raise "mapping already defined for #{fp}" if @footprints.include?(fp)
       @mappings << (@footprints[fp] = mapping)
     end
@@ -35,7 +35,7 @@ module Peanuts
     end
 
     def read(nut, reader)
-      rdfp = Footprint.new(reader)
+      rdfp = ReaderFootprint.new(reader)
       reader.each do
         m = @footprints[rdfp]
         m.read(nut, reader) if m
@@ -71,21 +71,24 @@ module Peanuts
         @obj = obj
       end
 
-      def ==(other)
-        self.equal?(other) || other &&
-          node_type == other.node_type &&
-          local_name == other.local_name &&
-          namespace_uri == other.namespace_uri
-      end
-
-      alias eql? ==
-
       def hash
         node_type.hash ^ local_name.hash ^ namespace_uri.hash
       end
 
       def to_s
         "#{node_type}(#{local_name}, #{namespace_uri})"
+      end
+    end
+
+    class MappingFootprint < Footprint #:nodoc:
+      def eql?(other)
+        self.equal?(other) || other && @obj.matches?(other)
+      end
+    end
+
+    class ReaderFootprint < Footprint #:nodoc:
+      def eql?(mappingfp)
+        mappingfp.eql?(@obj)
       end
     end
   end
