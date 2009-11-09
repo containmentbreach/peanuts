@@ -112,7 +112,7 @@ module Peanuts
       end
 
       def write_it(writer, value)
-        write_node(writer) {|w| write_value(w, value) }
+        write_node(writer) {|w| write_value(w, value) } if value
       end
     end
 

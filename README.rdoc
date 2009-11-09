@@ -1,6 +1,11 @@
 === Introduction
 *This is currently undergoing some rewrite. 2.x branch will introduce minor api incompatibilities.*
 
++Upd:+ Ok, the thing is out and the example below has been updated for 2.x, but the rdocs are
+largely out of date and I'm not sure whether I should update them since it seems like nobody's
+using this lib anyway.
+
+
 Peanuts is an library that allows for bidirectional mapping between Ruby objects and XML.
 
 Released under the MIT license.
@@ -11,11 +16,8 @@ Released under the MIT license.
 - Pluggable backends to work with different XML APIs (REXML implemented so far).
 
 === Installation
-Stable branch 1.x available from Gemcutter
+Beta 2.x (recommended) and stable 1.x available from Gemcutter
   gem install peanuts --source http://gemcutter.org
-
-Development branch 2.x available from Github. buggy/broken/missing docs
-  gem install omg-peanuts --source http://gems.github.com
 
 === Usage
 Please see an example below.
@@ -130,3 +132,4 @@ Please report via Github issue tracking.
 * http://github.com/omg/statelogic -- Simple state machine for ActiveRecord
 
 Copyright (c) 2009 Igor Gunko, released under the MIT license
+
