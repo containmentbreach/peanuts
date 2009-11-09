@@ -36,6 +36,8 @@ http://rdoc.info/projects/omg/peanuts
 Please report via Github issue tracking.
 
 === Example
+See also http://gist.github.com/230202 for real world example.
+
     class Cheezburger
       include Peanuts
 
