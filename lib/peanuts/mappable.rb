@@ -54,6 +54,16 @@ module Peanuts #:nodoc:
       type.is_a?(Class) && !(type < Converter)
     end
 
+    def self.macro(&block)
+      Module.new do |mod|
+        @@macro_proc = block
+        def self.included(other)
+          other.send(:include, MappableObject)
+          other.instance_eval(&@@macro_proc)
+        end
+      end
+    end
+
     def from_xml(source, options = {})
       new.from_xml(source, options)
     end
