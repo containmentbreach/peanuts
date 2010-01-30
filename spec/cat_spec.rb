@@ -7,7 +7,7 @@ require 'peanuts'
 
 
 class Cheezburger
-  include Peanuts
+  include Peanuts::MappableObject
 
   attribute :weight, :float
   attribute :price, :decimal
@@ -24,13 +24,13 @@ class Cheezburger
 end
 
 class Paws
-  include Peanuts
+  include Peanuts::MappableObject
 
   elements :paws, :name => :paw, :ns => 'urn:x-lol'
 end
 
 class Cat
-  include Peanuts
+  include Peanuts::MappableObject
 
   namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
