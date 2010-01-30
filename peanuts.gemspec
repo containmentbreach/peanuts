@@ -1,7 +1,7 @@
 gemspec = Gem::Specification.new do |s|
   s.name = 'peanuts'
-  s.version = '2.0.7'
-  s.date = '2009-09-30'
+  s.version = '2.1'
+  s.date = '2010-01-30'
   s.authors = ['Igor Gunko']
   s.email = 'tekmon@gmail.com'
   s.summary = 'Making XML <-> Ruby binding easy'
@@ -16,7 +16,6 @@ gemspec = Gem::Specification.new do |s|
   s.files = %w(
     README.rdoc MIT-LICENSE Rakefile
     lib/peanuts.rb
-    lib/omg-peanuts.rb
     lib/peanuts/mappable.rb
     lib/peanuts/mappings.rb
     lib/peanuts/converters.rb
@@ -40,7 +39,7 @@ gemspec = Gem::Specification.new do |s|
     s.specification_version = 2
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency('rspec', ['>= 1.2.8'])
+      s.add_development_dependency('rspec', ['>= 1.3'])
     else
     end
   else
