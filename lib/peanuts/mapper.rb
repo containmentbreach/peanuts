@@ -2,6 +2,10 @@ require 'enumerator'
 
 module Peanuts
   class Mapper
+    def self.of(cls)
+      cls.send(:mapper)
+    end
+
     include Enumerable
 
     attr_reader :root, :namespaces, :ns_context

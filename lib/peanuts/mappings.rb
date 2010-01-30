@@ -1,5 +1,6 @@
 require 'forwardable'
 require 'peanuts/converters'
+require 'set'
 
 module Peanuts
   class Mapping
@@ -140,11 +141,37 @@ module Peanuts
     module ObjectMapping
       private
       def read_value(reader)
-        type.mapper.read(type.new, reader)
+        Mapper.of(type).read(type.new, reader)
       end
 
       def write_value(writer, value)
-        type.mapper.write_children(value, writer)
+        Mapper.of(type).write_children(value, writer)
+      end
+    end
+
+    class Content < MemberMapping
+      NODETYPES = Set[:text, :significant_whitespace, :cdata].freeze
+
+      include ValueMapping
+
+      node_type :text
+
+      def initialize(name, type, options)
+        options[:name] = '#text'
+        super
+      end
+
+      def matches?(reader)
+        NODETYPES.include? reader.node_type
+      end
+
+      private
+      def read_it(reader, acc)
+        (acc || '') << read_value(reader)
+      end
+
+      def write_it(writer, value)
+        write_value(writer, value) if value
       end
     end
 
@@ -188,13 +215,13 @@ module Peanuts
       node_type :element
     end
 
-    class ShallowElement < Element
+    class WrapperElement < Element
       def read(nut, reader)
-        type.mapper.read(nut, reader)
+        Mapper.of(type).read(nut, reader)
       end
 
       def write(nut, writer)
-        write_node(writer) {|w| type.mapper.write_children(nut, w) }
+        write_node(writer) {|w| Mapper.of(type).write_children(nut, w) }
       end
 
       def clear(nut)
@@ -202,8 +229,10 @@ module Peanuts
       end
 
       def define_accessors(type)
-        self.type.mapper.define_accessors(type)
+        Mapper.of(self.type).define_accessors(type)
       end
     end
+
+    ShallowElement = WrapperElement
   end
 end

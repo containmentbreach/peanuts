@@ -12,7 +12,7 @@ module Peanuts #:nodoc:
     def from_xml(source, options = {})
       source = XML::Reader.new(source, options) unless source.is_a?(XML::Reader)
       e = source.find_element
-      e && self.class.mapper.read(self, source)
+      e && Mapper.of(self.class).read(self, source)
     end
 
     #    save_to(:string|:document[, options])      -> new_string|new_document
@@ -32,7 +32,7 @@ module Peanuts #:nodoc:
     #    puts doc.to_s
     def to_xml(dest = :string, options = {})
       dest = XML::Writer.new(dest, options) unless dest.is_a?(XML::Writer)
-      self.class.mapper.write(self, dest)
+      Mapper.of(self.class).write(self, dest)
       dest.result
     end
   end
@@ -49,6 +49,16 @@ module Peanuts #:nodoc:
       end
       cls
     end
+
+    def self.object_type?(type)
+      type.is_a?(Class) && !(type < Converter)
+    end
+
+    def from_xml(source, options = {})
+      new.from_xml(source, options)
+    end
+
+    private
 
     #    mapper -> Mapper
     #
@@ -144,17 +154,20 @@ module Peanuts #:nodoc:
     #    class Cat
     #      include Peanuts
     #      ...
-    #      shallow :friends do
+    #      wrapper :friends do
     #        element :friends, :name => :friend
     #      end
-    #      shallow :cheeseburger, Cheeseburger, :name => :cheezburger
+    #      wrapper :cheeseburger, Cheeseburger, :name => :cheezburger
     #      ...
     #    end
-    def shallow_element(name, *args, &block)
-      add_mapping(:shallow_element, name, *args, &block)
+    def wrapper_element(name, *args, &block)
+      add_mapping(:wrapper_element, name, *args, &block)
     end
 
-    alias shallow shallow_element
+    alias wrapper wrapper_element
+
+    alias shallow_element wrapper_element
+    alias shallow wrapper_element
 
     #    elements(name[, type][, options])   -> mapping_object
     #    elements(name[, options]) { block }  -> mapping_object
@@ -198,39 +211,34 @@ module Peanuts #:nodoc:
       add_mapping(:attribute, name, *args)
     end
 
+    def content(name, *args, &block)
+      add_mapping(:content, name, *args, &block)
+    end
+
     def schema(schema = nil)
       mapper.schema = schema if schema
       mapper.schema
-    end
-
-    def from_xml(source, options = {})
-      new.from_xml(source, options)
-    end
-
-    private
-    def object_type?(type)
-      type.is_a?(Class) && !(type < Converter)
     end
 
     def add_mapping(node, name, *args, &block)
       type, options = *args
       type, options = (block ? Class.new : :string), type if type.nil? || type.is_a?(Hash)
 
-      object_type = object_type?(type)
+      object_type = MappableType.object_type?(type)
       options = prepare_options(node, options || {})
 
       mapper << m = case node
       when :element
-        options.delete(:shallow) ? ShallowElement : (object_type ? Element : ElementValue)
+        options.delete(:wrapper) ? WrapperElement : (object_type ? Element : ElementValue)
       when :elements
         object_type ? Elements : ElementValues
       when :attribute
         Attribute
-      when :shallow_element
-        ShallowElement
+      when :wrapper_element
+        WrapperElement
+      when :content
+        Content
       end.new(name, type, options)
-
-      raise ArgumentError, 'bad type for shallow element' if !object_type && m.is_a?(ShallowElement)
 
       default_ns = m.prefix ? mapper.default_ns : m.namespace_uri
       if object_type && !type.is_a?(MappableType)
