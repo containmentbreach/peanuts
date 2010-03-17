@@ -1,56 +1,57 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'bigdecimal'
-require 'test/unit'
 require 'rubygems'
 require 'peanuts'
+require 'rspec'
 
+module Caturday
+  class Cheezburger
+    include Peanuts::MappableObject
 
-class Cheezburger
-  include Peanuts::MappableObject
+    attribute :weight, :float
+    attribute :price, :decimal
 
-  attribute :weight, :float
-  attribute :price, :decimal
+    def initialize(weight = nil, price = nil)
+      @weight, @price = weight, price
+    end
 
-  def initialize(weight = nil, price = nil)
-    @weight, @price = weight, price
+    def eql?(other)
+      other && weight == other.weight && price == other.price
+    end
+
+    alias == eql?
   end
 
-  def eql?(other)
-    other && weight == other.weight && price == other.price
+  class Paws
+    include Peanuts::MappableObject
+
+    elements :paws, :name => :paw, :ns => 'urn:x-lol'
   end
 
-  alias == eql?
-end
+  class Cat
+    include Peanuts::MappableObject
 
-class Paws
-  include Peanuts::MappableObject
+    namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
 
-  elements :paws, :name => :paw, :ns => 'urn:x-lol'
-end
+    root 'kitteh', :ns => 'urn:x-lol'
 
-class Cat
-  include Peanuts::MappableObject
+    attribute :has_tail?, :boolean, :name => 'has-tail', :ns => :kthnx
+    attribute :ears, :integer
 
-  namespaces :lol => 'urn:x-lol', :kthnx => 'urn:x-lol:kthnx'
-
-  root 'kitteh', :ns => 'urn:x-lol'
-
-  attribute :has_tail?, :boolean, :name => 'has-tail', :ns => :kthnx
-  attribute :ears, :integer
-
-  element :ration, [:string], :name => :eats, :ns => :kthnx
-  element :name, :ns => 'urn:x-lol:kthnx'
+    element :ration, [:string], :name => :eats, :ns => :kthnx
+    element :name, :ns => 'urn:x-lol:kthnx'
   
-  shallow :paws, Paws
+    shallow :paws, Paws
 
-  shallow :pals, :ns => :kthnx do
-    elements :friends, :name => :pal
-  end
+    shallow :pals, :ns => :kthnx do
+      elements :friends, :name => :pal
+    end
 
-  element :cheezburger, Cheezburger
-  element :moar_cheezburgers do
-    elements :cheezburger, Cheezburger
+    element :cheezburger, Caturday::Cheezburger
+    element :moar_cheezburgers do
+      elements :cheezburger, Caturday::Cheezburger
+    end
   end
 end
 
@@ -80,13 +81,13 @@ shared_examples_for 'my cat' do
   end
 
   it 'should has cheezburger' do
-    @cat.cheezburger.should be_kind_of Cheezburger
+    @cat.cheezburger.should be_kind_of Caturday::Cheezburger
   end
 
   it 'should has 2 moar good cheezburgerz' do
     @cat.moar_cheezburgers.cheezburger.should == [
-      Cheezburger.new(685.940, BigDecimal('19')),
-      Cheezburger.new(9356.7, BigDecimal('7.40'))]
+      Caturday::Cheezburger.new(685.940, BigDecimal('19')),
+      Caturday::Cheezburger.new(9356.7, BigDecimal('7.40'))]
   end
 end
 
@@ -103,6 +104,7 @@ end
 shared_examples_for 'sample kitteh' do
   before :all do
     @xml_fragment = <<-EOS
+<?xml version="1.0" encoding="utf-8" ?>
         <kitteh xmlns='urn:x-lol' xmlns:kthnx='urn:x-lol:kthnx' ears=' 2 ' kthnx:has-tail=' yes  '>
           <name xmlns='urn:x-lol:kthnx'>
               Silly
@@ -130,7 +132,7 @@ shared_examples_for 'sample kitteh' do
           </moar_cheezburgers>
         </kitteh>
     EOS
-    @cat = Cat.from_xml(@xml_fragment)
+    @cat = Caturday::Cat.from_xml(@xml_fragment)
     @cheezburger = @cat.cheezburger
   end
 
@@ -144,7 +146,7 @@ describe 'My cat' do
     it_should_behave_like 'sample kitteh'
 
     before :all do
-      @cat = Cat.from_xml(@cat.to_xml)
+      @cat = Caturday::Cat.from_xml(@cat.to_xml)
     end
   end
 end

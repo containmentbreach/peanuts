@@ -153,9 +153,9 @@ module Peanuts
         def value
           case @reader.node_type
           when RD::TYPE_ELEMENT
-            @reader.read_string
+            _string(@reader.read_string)
           else
-            @reader.has_value? ? @reader.value : nil
+            @reader.has_value? ? _string(@reader.value) : nil
           end
         end
 
@@ -177,6 +177,16 @@ module Peanuts
         end
 
         private
+        if ''.respond_to?(:force_encoding)
+          def _string(v)
+            v.force_encoding(Encoding::UTF_8)
+          end
+        else
+          def _string(v)
+            v
+          end
+        end
+
         def read
           case @reader.node_type
           when RD::TYPE_ATTRIBUTE
