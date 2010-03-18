@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'peanuts/xml'
 require 'peanuts/mappings'
 require 'peanuts/mapper'

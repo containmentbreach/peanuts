@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'forwardable'
 require 'peanuts/converters'
 require 'set'

@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'libxml'
 require 'forwardable'
 require 'uri'

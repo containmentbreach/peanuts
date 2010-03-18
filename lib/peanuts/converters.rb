@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 module Peanuts
   autoload :Time, 'time'
   autoload :BigDecimal, 'bigdecimal'
